@@ -171,7 +171,7 @@ namespace BrickLua.Syntax
                         {
                             's' => input[4] switch
                             {
-                                'e' => TokenType.Break,
+                                'e' => TokenType.False,
                                 _ => TokenType.Name,
                             },
                             _ => TokenType.Name
@@ -188,7 +188,7 @@ namespace BrickLua.Syntax
                         {
                             'a' => input[4] switch
                             {
-                                'l' => TokenType.Break,
+                                'l' => TokenType.Local,
                                 _ => TokenType.Name,
                             },
                             _ => TokenType.Name
@@ -205,7 +205,7 @@ namespace BrickLua.Syntax
                         {
                             'i' => input[4] switch
                             {
-                                'l' => TokenType.Break,
+                                'l' => TokenType.Until,
                                 _ => TokenType.Name,
                             },
                             _ => TokenType.Name
@@ -222,7 +222,7 @@ namespace BrickLua.Syntax
                         {
                             'l' => input[4] switch
                             {
-                                'e' => TokenType.Break,
+                                'e' => TokenType.While,
                                 _ => TokenType.Name,
                             },
                             _ => TokenType.Name
