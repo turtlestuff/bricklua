@@ -35,7 +35,12 @@ namespace BrickLua.Console
                 var lexer = new Lexer(new SequenceReader<char>(seq));
                 while (lexer.Lex() is Token t && t.Type != TokenType.EndOfFile)
                 {
-                    Console.WriteLine($"{t.Type}: {seq.Slice(t.SourceRange.Start, t.SourceRange.End)}");
+                    Console.WriteLine(@$"{t.Type}: {seq.Slice(t.SourceRange.Start, t.SourceRange.End)} {t.Type switch
+                    {
+                        TokenType.IntegerConstant => t.IntegerData.ToString(),
+                        TokenType.FloatConstant => t.FloatData.ToString(),
+                        _ => ""
+                    }}");
                 }
             }
         }

@@ -20,6 +20,7 @@
 using System;
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 
 namespace BrickLua.Syntax
 {
@@ -44,8 +45,6 @@ namespace BrickLua.Syntax
             }
 
             start = source.Position;
-
-            source.Advance(1);
 
             switch (ch)
             {
@@ -82,6 +81,13 @@ namespace BrickLua.Syntax
                 case ',': return LexSingleOperator(TokenType.Comma);
 
                 case '-':
+                    if (source.TryPeek(out var next) && next >= '0' && next <= '9')
+                    {
+                        return LexNumeral();
+                    }
+
+                    source.Advance(1);
+
                     if (NextIs('-'))
                     {
                         // TODO: Long comments
@@ -92,6 +98,8 @@ namespace BrickLua.Syntax
                     return NewToken(TokenType.Minus);
 
                 case '.':
+                    source.Advance(1);
+
                     if (NextIs('.'))
                     {
                         if (NextIs('.'))
@@ -119,6 +127,7 @@ namespace BrickLua.Syntax
 
         Token LexIdentifier()
         {
+            source.Advance(1);
             source.AdvancePastAny("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_");
             var str = source.Sequence.Slice(start, source.Position);
 
@@ -135,21 +144,81 @@ namespace BrickLua.Syntax
 
         Token LexNumeral()
         {
-            source.AdvancePastAny("0123456789.");
-            var str = source.Sequence.Slice(start, source.Position);
+            if (LexInteger(out var token))
+            {
+                return token;
+            }
+            /*else if (LexFloat(out token))
+            {
+                return token;
+            }*/
 
-            // TODO: Exponent literals
-            return NewToken(TokenType.FloatConstant);
+            return default;
         }
 
+        bool LexInteger(out Token token)
+        {
+            bool negative = NextIs('-');
+            if (NextIs('0') && NextIs('X', 'x'))
+            {
+                var start = source.Position;
+                source.AdvancePastAny("1234567890ABCDEFabcdef");
+                var str = source.Sequence.Slice(start, source.Position);
+
+                long num = 0;
+                foreach (var memory in str)
+                {
+                    static int HexToValue(char c)
+                    {
+                        if (char.IsDigit(c)) return c - '0';
+                        else return char.ToLowerInvariant(c) - 'a' + 10;
+                    }
+
+                    foreach (var ch in memory.Span)
+                    {
+                        num = num * 16 + HexToValue(ch);
+                    }
+                }
+
+                if (negative) num = -num;
+                token = new Token(new SequenceRange(this.start, source.Position), num);
+                return true;
+            }
+            else
+            {
+                source.AdvancePastAny("1234567890ABCDEFabcdef");
+                var str = source.Sequence.Slice(start, source.Position);
+                long num = 0;
+
+                foreach (var memory in str)
+                {
+                    foreach (var ch in memory.Span)
+                    {
+                        var d = ch - '0';
+                        if (num >= long.MaxValue / 10 && (num > long.MaxValue / 10 || d > (long.MaxValue % 10) + (negative ? 1 : 0)))
+                        {
+                            token = default;
+                            return false;
+                        }
+                        num = num * 10 + d;
+                    }
+                }
+
+                if (negative) num = -num;
+                token = new Token(new SequenceRange(start, source.Position), num);
+                return true;
+            }
+        }
 
         Token LexSingleOperator(TokenType type)
         {
+            source.Advance(1);
             return NewToken(type);
         }
 
         Token LexDoubleOperator(char next, TokenType one, TokenType two)
         {
+            source.Advance(1);
             TokenType type = one;
             if (NextIs(next))
             {
@@ -161,6 +230,7 @@ namespace BrickLua.Syntax
 
         Token LexDoubleChoiceOperator(char char1, char char2, TokenType none, TokenType type1, TokenType type2)
         {
+            source.Advance(1);
             TokenType type = none;
             if (NextIs(char1))
             {
@@ -186,6 +256,18 @@ namespace BrickLua.Syntax
 
             return false;
         }
+
+        bool NextIs(char a, char b)
+        {
+            if (source.TryPeek(out var next) && (next == a || next == b))
+            {
+                source.Advance(1);
+                return true;
+            }
+
+            return false;
+        }
+
 
         Token NewToken(TokenType type) => new Token(new SequenceRange(start, source.Position), type);
     }

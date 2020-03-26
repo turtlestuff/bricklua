@@ -17,17 +17,40 @@
 //  along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.
 //
 
+using System.Runtime.CompilerServices;
+
 namespace BrickLua.Syntax
 {
     public readonly struct Token
     {
-        public Token(SequenceRange sourceRange, TokenType type)
+        public Token(in SequenceRange sourceRange, TokenType type)
         {
             SourceRange = sourceRange;
             Type = type;
+            IntegerData = default;
+        }
+
+        public Token(in SequenceRange sourceRange, long numericData) : this(sourceRange, TokenType.IntegerConstant)
+        {
+            IntegerData = numericData;
+        }
+
+        public Token(in SequenceRange sourceRange, double numericData) : this(sourceRange, TokenType.FloatConstant)
+        {
+            IntegerData = Unsafe.As<double, long>(ref numericData);
         }
 
         public SequenceRange SourceRange { get; }
         public TokenType Type { get; }
+        public long IntegerData { get; }
+
+        public double FloatData
+        {
+            get
+            {
+                var data = IntegerData;
+                return Unsafe.As<long, double>(ref data);
+            }
+        }
     }
 }
