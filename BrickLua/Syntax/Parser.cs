@@ -18,7 +18,7 @@
 //
 
 using System.Collections.Immutable;
-using System.Linq.Expressions;
+using System.Text.RegularExpressions;
 
 namespace BrickLua.Syntax
 {
@@ -38,8 +38,8 @@ namespace BrickLua.Syntax
 
         SyntaxToken NextToken()
         {
-            var current = peek ?? this.current;
-            lexer.Lex();
+            var current = this.current;
+            current = peek ?? lexer.Lex();
             if (peek is { }) peek = null;
             return current;
         }
@@ -59,7 +59,8 @@ namespace BrickLua.Syntax
             return new SyntaxToken(kind, default);
         }
 
-        SyntaxToken MaybeMatchToken(SyntaxKind kind)
+
+        SyntaxToken? MaybeMatchToken(SyntaxKind kind)
         {
             if (current.Kind == kind)
                 return NextToken();
@@ -117,9 +118,113 @@ namespace BrickLua.Syntax
             return statements.ToImmutable();
         }
 
+        static object @true = true;
+        static object @false = false;
+
         ExpressionSyntax ParseExpression()
         {
-            return default;
+            return current.Kind switch
+            {
+                SyntaxKind.Semicolon => ParseNextExpression(),
+                SyntaxKind.Nil => new LiteralExpressionSyntax(null, MatchToken(SyntaxKind.Nil).Location),
+                SyntaxKind.True => new LiteralExpressionSyntax(@true, MatchToken(SyntaxKind.True).Location),
+                SyntaxKind.False => new LiteralExpressionSyntax(@false, MatchToken(SyntaxKind.False).Location),
+                SyntaxKind.IntegerConstant => new LiteralExpressionSyntax(current.IntegerData, MatchToken(SyntaxKind.IntegerConstant).Location),
+                SyntaxKind.FloatConstant => new LiteralExpressionSyntax(current.FloatData, MatchToken(SyntaxKind.FloatConstant).Location),
+                SyntaxKind.StringLiteral => new LiteralExpressionSyntax(lexer.Reader.Sequence.Slice(current.Location.Start, current.Location.End).ToString(), MatchToken(SyntaxKind.StringLiteral).Location),
+                SyntaxKind.DotDotDot => new VarargExpressionSyntax(MatchToken(SyntaxKind.DotDotDot).Location),
+                SyntaxKind.OpenBrace => ParseTableConstructor(),
+                SyntaxKind.Function => ParseFunctionExpression(),
+                _ => null!,
+            };
+        }
+
+        ExpressionSyntax ParseNextExpression()
+        {
+            MatchToken(SyntaxKind.Semicolon);
+            return ParseExpression();
+        }
+
+        FunctionExpressionSyntax ParseFunctionExpression()
+        {
+            var current = this.current;
+            var body = ParseFunctionBody();
+            return new FunctionExpressionSyntax(body, From(current, body.Body.Body[^1]));
+        }
+
+        TableConstructorExpressionSyntax ParseTableConstructor()
+        {
+            var statements = ImmutableArray.CreateBuilder<TableConstructorExpressionSyntax.FieldAssignmentExpressionSyntax>();
+            var start = MatchToken(SyntaxKind.OpenBrace);
+            while (current.Kind != SyntaxKind.CloseBrace && current.Kind != SyntaxKind.EndOfFile)
+            {
+                SyntaxNode target;
+                ExpressionSyntax? value = null;
+                switch (current.Kind)
+                {
+                    case SyntaxKind.OpenBracket:
+                        MatchToken(SyntaxKind.OpenBracket);
+                        target = ParseExpression();
+                        MatchToken(SyntaxKind.CloseBracket);
+                        MatchToken(SyntaxKind.Equals);
+                        value = ParseExpression();
+                        break;
+                    case SyntaxKind.Name when Peek().Kind == SyntaxKind.Equals:
+                        target = MatchToken(SyntaxKind.Name);
+                        MatchToken(SyntaxKind.Equals);
+                        value = ParseExpression();
+                        break;
+                    default:
+                        target = ParseExpression();
+                        break;
+                }
+
+                statements.Add(new TableConstructorExpressionSyntax.FieldAssignmentExpressionSyntax(target, value, From(target, value ?? target)));
+
+                if (current.Kind == SyntaxKind.Semicolon || current.Kind == SyntaxKind.Comma)
+                {
+                    NextToken();
+                }
+            }
+
+            var end = MatchToken(SyntaxKind.CloseBrace);
+
+            return new TableConstructorExpressionSyntax(statements.ToImmutable(), From(start, end));
+        }
+
+        FunctionBody ParseFunctionBody()
+        {
+            MatchToken(SyntaxKind.OpenParenthesis);
+            ImmutableArray<SyntaxToken> names;
+            bool isVararg = false;
+            if (current.Kind == SyntaxKind.DotDotDot)
+            {
+                names = ImmutableArray<SyntaxToken>.Empty;
+                isVararg = true;
+            }
+            else
+            {
+                names = ParseNameList();
+                if (current.Kind == SyntaxKind.Comma)
+                {
+                    MatchToken(SyntaxKind.DotDotDot);
+                    isVararg = true;
+                }
+            }
+
+            return new FunctionBody(names, isVararg, ParseBlock());
+        }
+
+        ImmutableArray<SyntaxToken> ParseNameList()
+        {
+            var statements = ImmutableArray.CreateBuilder<SyntaxToken>();
+            statements.Add(MatchToken(SyntaxKind.Name));
+            while (current.Kind == SyntaxKind.Comma)
+            {
+                MatchToken(SyntaxKind.Comma);
+                statements.Add(MatchToken(SyntaxKind.Name));
+            }
+            return statements.ToImmutable();
         }
 
         BreakStatementSyntax ParseBreak()

@@ -24,8 +24,7 @@ namespace BrickLua.Syntax
         EndOfFile,
 
         Name,
-        ShortLiteral,
-        LongLiteral,
+        StringLiteral,
         IntegerConstant,
         FloatConstant,
 
