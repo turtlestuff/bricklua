@@ -19,7 +19,7 @@
 
 namespace BrickLua.Syntax
 {
-    public enum TokenType : byte
+    public enum SyntaxKind : byte
     {
         EndOfFile,
 
@@ -86,6 +86,23 @@ namespace BrickLua.Syntax
         Comma,
         Dot,
         DotDot,
-        DotDotDot
+        DotDotDot,
+
+        // Statements
+        RepeatUntil,
+        LocalFunction,
+        ReturnStatement,
+        NumericalFor,
+        LocalDeclaration,
+        IfStatement,
+        GotoStatement,
+        FunctionStatement,
+        ForStatement,
+        ElseIfClause,
+        DoStatement,
+        BreakStatement,
+        Block,
+        Chunk,
+        WhileDo
     }
 }

@@ -21,28 +21,26 @@ using System.Runtime.CompilerServices;
 
 namespace BrickLua.Syntax
 {
-    public readonly struct Token
+    public class SyntaxToken : SyntaxNode
     {
-        public Token(in SequenceRange sourceRange, TokenType type)
+        public SyntaxToken(SyntaxKind kind, in SequenceRange location) : base(location)
         {
-            SourceRange = sourceRange;
-            Type = type;
+            Kind = kind;
             IntegerData = default;
         }
 
-        public Token(in SequenceRange sourceRange, long numericData) : this(sourceRange, TokenType.IntegerConstant)
+        public SyntaxToken(long numericData, in SequenceRange location) : this(SyntaxKind.IntegerConstant, location)
         {
             IntegerData = numericData;
         }
 
-        public Token(in SequenceRange sourceRange, double numericData) : this(sourceRange, TokenType.FloatConstant)
+        public SyntaxToken(double numericData, in SequenceRange location) : this(SyntaxKind.FloatConstant, location)
         {
             IntegerData = Unsafe.As<double, long>(ref numericData);
         }
 
-        public SequenceRange SourceRange { get; }
-        public TokenType Type { get; }
         public long IntegerData { get; }
+        public override SyntaxKind Kind { get; }
 
         public double FloatData
         {

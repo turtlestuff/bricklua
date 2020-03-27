@@ -21,14 +21,15 @@ namespace BrickLua.Syntax
 {
     public sealed class WhileDoStatementSyntax : StatementSyntax
     {
-        public WhileDoStatementSyntax(ExpressionSyntax condition, BlockSyntax body, in SequenceRange location) : base(location)
+        public WhileDoStatementSyntax(ExpressionSyntax condition, BlockStatementSyntax body, in SequenceRange location) : base(location)
         {
             Condition = condition;
             Body = body;
         }
 
         public ExpressionSyntax Condition { get; }
-        public BlockSyntax Body { get; }
+        public BlockStatementSyntax Body { get; }
+        public override SyntaxKind Kind => SyntaxKind.WhileDo;
     }
 
 }

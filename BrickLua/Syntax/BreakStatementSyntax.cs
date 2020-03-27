@@ -24,5 +24,7 @@ namespace BrickLua.Syntax
         public BreakStatementSyntax(in SequenceRange location) : base(location)
         {
         }
+
+        public override SyntaxKind Kind => SyntaxKind.BreakStatement;
     }
 }

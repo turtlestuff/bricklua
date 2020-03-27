@@ -21,13 +21,14 @@ namespace BrickLua.Syntax
 {
     public sealed class RepeatUntilStatementSyntax : StatementSyntax
     {
-        public RepeatUntilStatementSyntax(BlockSyntax body, ExpressionSyntax condition, in SequenceRange location) : base(location)
+        public RepeatUntilStatementSyntax(BlockStatementSyntax body, ExpressionSyntax condition, in SequenceRange location) : base(location)
         {
             Body = body;
             Condition = condition;
         }
 
-        public BlockSyntax Body { get; }
+        public BlockStatementSyntax Body { get; }
         public ExpressionSyntax Condition { get; }
+        public override SyntaxKind Kind => SyntaxKind.RepeatUntil;
     }
 }

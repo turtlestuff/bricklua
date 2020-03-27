@@ -25,27 +25,27 @@ namespace BrickLua.Syntax
     {
         // TODO: Replace with https://github.com/dotnet/csharplang/issues/1881
 
-        public static TokenType GetIdentifierKind(ReadOnlySpan<char> input) => input.Length switch
+        public static SyntaxKind GetIdentifierKind(ReadOnlySpan<char> input) => input.Length switch
         {
             2 => input[0] switch
             {
                 'd' => input[1] switch
                 {
-                    'o' => TokenType.Do,
-                    _ => TokenType.Name
+                    'o' => SyntaxKind.Do,
+                    _ => SyntaxKind.Name
                 },
                 'i' => input[1] switch
                 {
-                    'f' => TokenType.If,
-                    'n' => TokenType.In,
-                    _ => TokenType.Name
+                    'f' => SyntaxKind.If,
+                    'n' => SyntaxKind.In,
+                    _ => SyntaxKind.Name
                 },
                 'o' => input[1] switch
                 {
-                    'r' => TokenType.Or,
-                    _ => TokenType.Name
+                    'r' => SyntaxKind.Or,
+                    _ => SyntaxKind.Name
                 },
-                _ => TokenType.Name,
+                _ => SyntaxKind.Name,
             },
             3 => input[0] switch
             {
@@ -53,44 +53,44 @@ namespace BrickLua.Syntax
                 {
                     'n' => input[2] switch
                     {
-                        'd' => TokenType.And,
-                        _ => TokenType.Name,
+                        'd' => SyntaxKind.And,
+                        _ => SyntaxKind.Name,
                     },
-                    _ => TokenType.Name,
+                    _ => SyntaxKind.Name,
                 },
                 'e' => input[1] switch
                 {
                     'n' => input[2] switch
                     {
-                        'd' => TokenType.End,
-                        _ => TokenType.Name,
+                        'd' => SyntaxKind.End,
+                        _ => SyntaxKind.Name,
                     },
-                    _ => TokenType.Name,
+                    _ => SyntaxKind.Name,
                 },
                 'f' => input[1] switch
                 {
                     'o' => input[2] switch
                     {
-                        'r' => TokenType.For,
-                        _ => TokenType.Name,
+                        'r' => SyntaxKind.For,
+                        _ => SyntaxKind.Name,
                     },
-                    _ => TokenType.Name,
+                    _ => SyntaxKind.Name,
                 },
                 'n' => input[1] switch
                 {
                     'i' => input[2] switch
                     {
-                        'l' => TokenType.Nil,
-                        _ => TokenType.Name,
+                        'l' => SyntaxKind.Nil,
+                        _ => SyntaxKind.Name,
                     },
                     'o' => input[2] switch
                     {
-                        't' => TokenType.Not,
-                        _ => TokenType.Name,
+                        't' => SyntaxKind.Not,
+                        _ => SyntaxKind.Name,
                     },
-                    _ => TokenType.Name,
+                    _ => SyntaxKind.Name,
                 },
-                _ => TokenType.Name,
+                _ => SyntaxKind.Name,
             },
             4 => input[0] switch
             {
@@ -100,12 +100,12 @@ namespace BrickLua.Syntax
                     {
                         's' => input[3] switch
                         {
-                            'e' => TokenType.Else,
-                            _ => TokenType.Name
+                            'e' => SyntaxKind.Else,
+                            _ => SyntaxKind.Name
                         },
-                        _ => TokenType.Name
+                        _ => SyntaxKind.Name
                     },
-                    _ => TokenType.Name
+                    _ => SyntaxKind.Name
                 },
                 'g' => input[1] switch
                 {
@@ -113,12 +113,12 @@ namespace BrickLua.Syntax
                     {
                         't' => input[3] switch
                         {
-                            'o' => TokenType.Goto,
-                            _ => TokenType.Name
+                            'o' => SyntaxKind.Goto,
+                            _ => SyntaxKind.Name
                         },
-                        _ => TokenType.Name
+                        _ => SyntaxKind.Name
                     },
-                    _ => TokenType.Name
+                    _ => SyntaxKind.Name
                 },
                 't' => input[1] switch
                 {
@@ -126,23 +126,23 @@ namespace BrickLua.Syntax
                     {
                         'e' => input[3] switch
                         {
-                            'n' => TokenType.Then,
-                            _ => TokenType.Name
+                            'n' => SyntaxKind.Then,
+                            _ => SyntaxKind.Name
                         },
-                        _ => TokenType.Name
+                        _ => SyntaxKind.Name
                     },
                     'r' => input[2] switch
                     {
                         'u' => input[3] switch
                         {
-                            'e' => TokenType.True,
-                            _ => TokenType.Name
+                            'e' => SyntaxKind.True,
+                            _ => SyntaxKind.Name
                         },
-                        _ => TokenType.Name
+                        _ => SyntaxKind.Name
                     },
-                    _ => TokenType.Name
+                    _ => SyntaxKind.Name
                 },
-                _ => TokenType.Name
+                _ => SyntaxKind.Name
             },
             5 => input[0] switch
             {
@@ -154,14 +154,14 @@ namespace BrickLua.Syntax
                         {
                             'a' => input[4] switch
                             {
-                                'k' => TokenType.Break,
-                                _ => TokenType.Name,
+                                'k' => SyntaxKind.Break,
+                                _ => SyntaxKind.Name,
                             },
-                            _ => TokenType.Name
+                            _ => SyntaxKind.Name
                         },
-                        _ => TokenType.Name
+                        _ => SyntaxKind.Name
                     },
-                    _ => TokenType.Name
+                    _ => SyntaxKind.Name
                 },
                 'f' => input[1] switch
                 {
@@ -171,14 +171,14 @@ namespace BrickLua.Syntax
                         {
                             's' => input[4] switch
                             {
-                                'e' => TokenType.False,
-                                _ => TokenType.Name,
+                                'e' => SyntaxKind.False,
+                                _ => SyntaxKind.Name,
                             },
-                            _ => TokenType.Name
+                            _ => SyntaxKind.Name
                         },
-                        _ => TokenType.Name
+                        _ => SyntaxKind.Name
                     },
-                    _ => TokenType.Name
+                    _ => SyntaxKind.Name
                 },
                 'l' => input[1] switch
                 {
@@ -188,14 +188,14 @@ namespace BrickLua.Syntax
                         {
                             'a' => input[4] switch
                             {
-                                'l' => TokenType.Local,
-                                _ => TokenType.Name,
+                                'l' => SyntaxKind.Local,
+                                _ => SyntaxKind.Name,
                             },
-                            _ => TokenType.Name
+                            _ => SyntaxKind.Name
                         },
-                        _ => TokenType.Name
+                        _ => SyntaxKind.Name
                     },
-                    _ => TokenType.Name
+                    _ => SyntaxKind.Name
                 },
                 'u' => input[1] switch
                 {
@@ -205,14 +205,14 @@ namespace BrickLua.Syntax
                         {
                             'i' => input[4] switch
                             {
-                                'l' => TokenType.Until,
-                                _ => TokenType.Name,
+                                'l' => SyntaxKind.Until,
+                                _ => SyntaxKind.Name,
                             },
-                            _ => TokenType.Name
+                            _ => SyntaxKind.Name
                         },
-                        _ => TokenType.Name
+                        _ => SyntaxKind.Name
                     },
-                    _ => TokenType.Name
+                    _ => SyntaxKind.Name
                 },
                 'w' => input[1] switch
                 {
@@ -222,16 +222,16 @@ namespace BrickLua.Syntax
                         {
                             'l' => input[4] switch
                             {
-                                'e' => TokenType.While,
-                                _ => TokenType.Name,
+                                'e' => SyntaxKind.While,
+                                _ => SyntaxKind.Name,
                             },
-                            _ => TokenType.Name
+                            _ => SyntaxKind.Name
                         },
-                        _ => TokenType.Name
+                        _ => SyntaxKind.Name
                     },
-                    _ => TokenType.Name
+                    _ => SyntaxKind.Name
                 },
-                _ => TokenType.Name
+                _ => SyntaxKind.Name
             },
             6 => input[0] switch
             {
@@ -245,16 +245,16 @@ namespace BrickLua.Syntax
                             {
                                 'i' => input[5] switch
                                 {
-                                    'f' => TokenType.ElseIf,
-                                    _ => TokenType.Name,
+                                    'f' => SyntaxKind.ElseIf,
+                                    _ => SyntaxKind.Name,
                                 },
-                                _ => TokenType.Name,
+                                _ => SyntaxKind.Name,
                             },
-                            _ => TokenType.Name
+                            _ => SyntaxKind.Name
                         },
-                        _ => TokenType.Name
+                        _ => SyntaxKind.Name
                     },
-                    _ => TokenType.Name
+                    _ => SyntaxKind.Name
                 },
                 'r' => input[1] switch
                 {
@@ -266,12 +266,12 @@ namespace BrickLua.Syntax
                             {
                                 'a' => input[5] switch
                                 {
-                                    't' => TokenType.Repeat,
-                                    _ => TokenType.Name,
+                                    't' => SyntaxKind.Repeat,
+                                    _ => SyntaxKind.Name,
                                 },
-                                _ => TokenType.Name,
+                                _ => SyntaxKind.Name,
                             },
-                            _ => TokenType.Name
+                            _ => SyntaxKind.Name
                         },
                         't' => input[3] switch
                         {
@@ -279,18 +279,18 @@ namespace BrickLua.Syntax
                             {
                                 'r' => input[5] switch
                                 {
-                                    'n' => TokenType.Return,
-                                    _ => TokenType.Name,
+                                    'n' => SyntaxKind.Return,
+                                    _ => SyntaxKind.Name,
                                 },
-                                _ => TokenType.Name,
+                                _ => SyntaxKind.Name,
                             },
-                            _ => TokenType.Name
+                            _ => SyntaxKind.Name
                         },
-                        _ => TokenType.Name
+                        _ => SyntaxKind.Name
                     },
-                    _ => TokenType.Name
+                    _ => SyntaxKind.Name
                 },
-                _ => TokenType.Name,
+                _ => SyntaxKind.Name,
             },
             8 => input[0] switch
             {
@@ -308,24 +308,24 @@ namespace BrickLua.Syntax
                                     {
                                         'o' => input[7] switch
                                         {
-                                            'n' => TokenType.Function,
-                                            _ => TokenType.Name,
+                                            'n' => SyntaxKind.Function,
+                                            _ => SyntaxKind.Name,
                                         },
-                                        _ => TokenType.Name,
+                                        _ => SyntaxKind.Name,
                                     },
-                                    _ => TokenType.Name,
+                                    _ => SyntaxKind.Name,
                                 },
-                                _ => TokenType.Name,
+                                _ => SyntaxKind.Name,
                             },
-                            _ => TokenType.Name
+                            _ => SyntaxKind.Name
                         },
-                        _ => TokenType.Name
+                        _ => SyntaxKind.Name
                     },
-                    _ => TokenType.Name
+                    _ => SyntaxKind.Name
                 },
-                _ => TokenType.Name,
+                _ => SyntaxKind.Name,
             },
-            _ => TokenType.Name
+            _ => SyntaxKind.Name
         };
     }
 }

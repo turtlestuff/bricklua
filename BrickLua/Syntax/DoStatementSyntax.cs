@@ -21,12 +21,13 @@ namespace BrickLua.Syntax
 {
     public sealed class DoStatementSyntax : StatementSyntax
     {
-        public DoStatementSyntax(BlockSyntax body, in SequenceRange location) : base(location)
+        public DoStatementSyntax(BlockStatementSyntax body, in SequenceRange location) : base(location)
         {
             Body = body;
         }
 
-        public BlockSyntax Body { get; }
+        public BlockStatementSyntax Body { get; }
+        public override SyntaxKind Kind => SyntaxKind.DoStatement;
     }
 
 }

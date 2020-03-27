@@ -19,7 +19,7 @@
 
 namespace BrickLua.Syntax
 {
-    public abstract class ExpressionSyntax : SyntaxNode
+    public abstract class ExpressionSyntax : StatementSyntax
     {
         protected ExpressionSyntax(in SequenceRange location) : base(location)
         {

@@ -29,5 +29,6 @@ namespace BrickLua.Syntax
         }
 
         public ImmutableArray<ExpressionSyntax> ReturnValues { get; }
+        public override SyntaxKind Kind => SyntaxKind.ReturnStatement;
     }
 }

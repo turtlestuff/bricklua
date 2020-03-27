@@ -31,17 +31,18 @@ namespace BrickLua.Syntax
 
         public ImmutableArray<LocalVariableDeclaration> Declarations { get; }
         public ImmutableArray<ExpressionSyntax> Expressions { get; }
+        public override SyntaxKind Kind => SyntaxKind.LocalDeclaration;
     }
 
     public class LocalVariableDeclaration
     {
-        public LocalVariableDeclaration(Token name, Token attribute)
+        public LocalVariableDeclaration(SyntaxToken name, SyntaxToken attribute)
         {
             Name = name;
             Attribute = attribute;
         }
 
-        public Token Name { get; }
-        public Token Attribute { get; }
+        public SyntaxToken Name { get; }
+        public SyntaxToken Attribute { get; }
     }
 }

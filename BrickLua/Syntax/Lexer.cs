@@ -35,12 +35,12 @@ namespace BrickLua.Syntax
             start = default;
         }
 
-        public Token Lex()
+        public SyntaxToken Lex()
         {
             @continue:
             if (!source.TryPeek(out var ch))
             {
-                return new Token(default, TokenType.EndOfFile);
+                return new SyntaxToken(SyntaxKind.EndOfFile, default);
             }
 
             start = source.Position;
@@ -57,27 +57,27 @@ namespace BrickLua.Syntax
                 case '\v':
                     goto @continue;
 
-                case '+': return LexSingleOperator(TokenType.Plus);
-                case '*': return LexSingleOperator(TokenType.Asterisk);
-                case '/': return LexDoubleOperator('/', TokenType.Slash, TokenType.SlashSlash);
-                case '=': return LexDoubleOperator('=', TokenType.Equals, TokenType.EqualsEquals);
-                case '%': return LexSingleOperator(TokenType.Asterisk);
-                case '^': return LexSingleOperator(TokenType.Caret);
-                case '~': return LexDoubleOperator('=', TokenType.Tilde, TokenType.TildeEquals);
-                case '<': return LexDoubleChoiceOperator('=', '>', TokenType.Less, TokenType.LessEquals, TokenType.LessLess);
-                case '>': return LexDoubleChoiceOperator('=', '>', TokenType.Greater, TokenType.GreaterEquals, TokenType.GreaterGreater);
-                case '#': return LexSingleOperator(TokenType.Hash);
-                case '&': return LexSingleOperator(TokenType.Ampersand);
-                case '|': return LexSingleOperator(TokenType.Pipe);
-                case '(': return LexSingleOperator(TokenType.OpenParenthesis);
-                case ')': return LexSingleOperator(TokenType.CloseParenthesis);
-                case '{': return LexSingleOperator(TokenType.OpenBrace);
-                case '}': return LexSingleOperator(TokenType.CloseBrace);
-                case '[': return LexSingleOperator(TokenType.OpenBracket);
-                case ']': return LexSingleOperator(TokenType.CloseBracket);
-                case ':': return LexDoubleOperator(':', TokenType.Colon, TokenType.ColonColon);
-                case ';': return LexSingleOperator(TokenType.Semicolon);
-                case ',': return LexSingleOperator(TokenType.Comma);
+                case '+': return LexSingleOperator(SyntaxKind.Plus);
+                case '*': return LexSingleOperator(SyntaxKind.Asterisk);
+                case '/': return LexDoubleOperator('/', SyntaxKind.Slash, SyntaxKind.SlashSlash);
+                case '=': return LexDoubleOperator('=', SyntaxKind.Equals, SyntaxKind.EqualsEquals);
+                case '%': return LexSingleOperator(SyntaxKind.Asterisk);
+                case '^': return LexSingleOperator(SyntaxKind.Caret);
+                case '~': return LexDoubleOperator('=', SyntaxKind.Tilde, SyntaxKind.TildeEquals);
+                case '<': return LexDoubleChoiceOperator('=', '>', SyntaxKind.Less, SyntaxKind.LessEquals, SyntaxKind.LessLess);
+                case '>': return LexDoubleChoiceOperator('=', '>', SyntaxKind.Greater, SyntaxKind.GreaterEquals, SyntaxKind.GreaterGreater);
+                case '#': return LexSingleOperator(SyntaxKind.Hash);
+                case '&': return LexSingleOperator(SyntaxKind.Ampersand);
+                case '|': return LexSingleOperator(SyntaxKind.Pipe);
+                case '(': return LexSingleOperator(SyntaxKind.OpenParenthesis);
+                case ')': return LexSingleOperator(SyntaxKind.CloseParenthesis);
+                case '{': return LexSingleOperator(SyntaxKind.OpenBrace);
+                case '}': return LexSingleOperator(SyntaxKind.CloseBrace);
+                case '[': return LexSingleOperator(SyntaxKind.OpenBracket);
+                case ']': return LexSingleOperator(SyntaxKind.CloseBracket);
+                case ':': return LexDoubleOperator(':', SyntaxKind.Colon, SyntaxKind.ColonColon);
+                case ';': return LexSingleOperator(SyntaxKind.Semicolon);
+                case ',': return LexSingleOperator(SyntaxKind.Comma);
 
                 case '-':
                     if (source.TryPeek(out var next) && next >= '0' && next <= '9')
@@ -94,7 +94,7 @@ namespace BrickLua.Syntax
                         goto @continue;
                     }
 
-                    return NewToken(TokenType.Minus);
+                    return NewToken(SyntaxKind.Minus);
 
                 case '.':
                     source.Advance(1);
@@ -103,13 +103,13 @@ namespace BrickLua.Syntax
                     {
                         if (NextIs('.'))
                         {
-                            return NewToken(TokenType.DotDotDot);
+                            return NewToken(SyntaxKind.DotDotDot);
                         }
 
-                        return NewToken(TokenType.DotDot);
+                        return NewToken(SyntaxKind.DotDot);
                     }
 
-                    return NewToken(TokenType.Dot);
+                    return NewToken(SyntaxKind.Dot);
 
                 case var _ when ch >= '0' && ch <= '9':
                     return LexNumeral();
@@ -124,13 +124,13 @@ namespace BrickLua.Syntax
             }
         }
 
-        Token LexIdentifier()
+        SyntaxToken LexIdentifier()
         {
             source.Advance(1);
             source.AdvancePastAny("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_");
             var str = source.Sequence.Slice(start, source.Position);
 
-            TokenType type = TokenType.Name;
+            SyntaxKind type = SyntaxKind.Name;
             if (str.Length <= 8)
             {
                 // Since this is tiny, it's probably OK to allocate (not likely to be broken across segments).
@@ -141,7 +141,7 @@ namespace BrickLua.Syntax
             return NewToken(type);
         }
 
-        Token LexNumeral()
+        SyntaxToken LexNumeral()
         {
             // TODO: Replace/enhance hex parsing code with https://github.com/dotnet/runtime/issues/1630
 
@@ -153,7 +153,7 @@ namespace BrickLua.Syntax
             return default;
         }
 
-        bool LexInteger(out Token token)
+        bool LexInteger(out SyntaxToken token)
         {
             bool negative = NextIs('-');
             if (NextIs('0') && NextIs('X', 'x'))
@@ -178,7 +178,7 @@ namespace BrickLua.Syntax
                 }
 
                 if (negative) num = -num;
-                token = new Token(new SequenceRange(this.start, source.Position), num);
+                token = new SyntaxToken(num, new SequenceRange(this.start, source.Position));
                 return true;
             }
             else
@@ -202,21 +202,21 @@ namespace BrickLua.Syntax
                 }
 
                 if (negative) num = -num;
-                token = new Token(new SequenceRange(start, source.Position), num);
+                token = new SyntaxToken(num, new SequenceRange(start, source.Position));
                 return true;
             }
         }
 
-        Token LexSingleOperator(TokenType type)
+        SyntaxToken LexSingleOperator(SyntaxKind type)
         {
             source.Advance(1);
             return NewToken(type);
         }
 
-        Token LexDoubleOperator(char next, TokenType one, TokenType two)
+        SyntaxToken LexDoubleOperator(char next, SyntaxKind one, SyntaxKind two)
         {
             source.Advance(1);
-            TokenType type = one;
+            SyntaxKind type = one;
             if (NextIs(next))
             {
                 type = two;
@@ -225,10 +225,10 @@ namespace BrickLua.Syntax
             return NewToken(type);
         }
 
-        Token LexDoubleChoiceOperator(char char1, char char2, TokenType none, TokenType type1, TokenType type2)
+        SyntaxToken LexDoubleChoiceOperator(char char1, char char2, SyntaxKind none, SyntaxKind type1, SyntaxKind type2)
         {
             source.Advance(1);
-            TokenType type = none;
+            SyntaxKind type = none;
             if (NextIs(char1))
             {
                 type = type1;
@@ -264,6 +264,6 @@ namespace BrickLua.Syntax
         }
 
 
-        Token NewToken(TokenType type) => new Token(new SequenceRange(start, source.Position), type);
+        SyntaxToken NewToken(SyntaxKind type) => new SyntaxToken(type, new SequenceRange(start, source.Position));
     }
 }

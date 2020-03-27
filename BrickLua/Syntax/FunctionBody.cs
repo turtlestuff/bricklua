@@ -23,16 +23,16 @@ namespace BrickLua.Syntax
 {
     public class FunctionBody
     {
-        public FunctionBody(ImmutableArray<Token> parameterNames, bool hasVarargs, BlockSyntax body)
+        public FunctionBody(ImmutableArray<SyntaxToken> parameterNames, bool isVararg, BlockStatementSyntax body)
         {
             ParameterNames = parameterNames;
-            HasVarargs = hasVarargs;
+            IsVararg = isVararg;
             Body = body;
         }
 
-        public ImmutableArray<Token> ParameterNames { get; }
-        public bool HasVarargs { get; }
+        public ImmutableArray<SyntaxToken> ParameterNames { get; }
+        public bool IsVararg { get; }
 
-        public BlockSyntax Body { get; }
+        public BlockStatementSyntax Body { get; }
     }
 }
