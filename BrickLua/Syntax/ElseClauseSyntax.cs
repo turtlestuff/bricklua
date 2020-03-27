@@ -19,16 +19,13 @@
 
 namespace BrickLua.Syntax
 {
-    public sealed class WhileDoStatementSyntax : StatementSyntax
+    public class ElseClauseSyntax : StatementSyntax
     {
-        public WhileDoStatementSyntax(ExpressionSyntax condition, BlockStatementSyntax body, in SequenceRange location) : base(location)
+        public ElseClauseSyntax(BlockStatementSyntax body, in SequenceRange location) : base(location)
         {
-            Condition = condition;
             Body = body;
         }
 
-        public ExpressionSyntax Condition { get; }
         public BlockStatementSyntax Body { get; }
     }
-
 }

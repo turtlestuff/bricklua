@@ -18,6 +18,7 @@
 //
 
 using System.Collections.Immutable;
+using System.Data;
 
 namespace BrickLua.Syntax
 {
@@ -38,16 +39,11 @@ namespace BrickLua.Syntax
         SyntaxToken NextToken()
         {
             var current = this.current;
-            if (peek is null)
-            {
-                var lex = lexer.Lex();
-                this.current = lex;
-            }
-            else
-            {
-                this.current = peek;
-            }
-            if (peek is { }) peek = null;
+            this.current = peek ?? lexer.Lex();
+
+            if (peek is { })
+                peek = null;
+
             return current;
         }
 
@@ -84,45 +80,55 @@ namespace BrickLua.Syntax
             return new ChunkSyntax(block, block.Location);
         }
 
-        StatementSyntax ParseStatement() => current.Kind switch
+        StatementSyntax? ParseStatement() => current.Kind switch
         {
             SyntaxKind.Semicolon => ParseStatement(),
             SyntaxKind.Break => ParseBreak(),
             SyntaxKind.Goto => ParseGoto(),
             SyntaxKind.Do => ParseDo(),
+            SyntaxKind.While => ParseWhile(),
+            SyntaxKind.Repeat => ParseRepeat(),
+            SyntaxKind.If => ParseIf(),
+            SyntaxKind.For => ParseFor(),
+            /*SyntaxKind.Function => ParseFunction(),
+            SyntaxKind.Local => ParseLocal(),*/
+
             SyntaxKind.ColonColon => ParseLabel(),
-            _ => default!,
+            // Not a valid statement.
+            _ => null,
         };
 
         BlockStatementSyntax ParseBlock()
         {
             var statements = ImmutableArray.CreateBuilder<StatementSyntax>();
 
-            while (current.Kind != SyntaxKind.Return && current.Kind != SyntaxKind.EndOfFile)
+            StatementSyntax? statement;
+            while (current.Kind != SyntaxKind.Return && current.Kind != SyntaxKind.EndOfFile && (statement = ParseStatement()) != null)
             {
-                statements.Add(ParseStatement());
+                statements.Add(statement);
             }
 
-            ReturnStatementSyntax? syntax = null;
-            if (current.Kind == SyntaxKind.Return)
+            ReturnStatementSyntax? @return = null;
+            if (MaybeMatchToken(SyntaxKind.Return) is { })
             {
                 var returnValues = ParseExpressionList();
                 var semi = MaybeMatchToken(SyntaxKind.Semicolon);
-                syntax = new ReturnStatementSyntax(returnValues, From(returnValues[0], semi ?? (SyntaxNode) returnValues[^1]));
+                @return = new ReturnStatementSyntax(returnValues, From(returnValues[0], semi ?? (SyntaxNode) returnValues[^1]));
             }
 
-            return new BlockStatementSyntax(statements.ToImmutable(), syntax, From(statements[0], syntax ?? statements[^1]));
-        }
 
-        ImmutableArray<ExpressionSyntax> ParseExpressionList()
-        {
-            var statements = ImmutableArray.CreateBuilder<ExpressionSyntax>();
-            do
-            {
-                statements.Add(ParseExpression());
-            } while (Peek().Kind == SyntaxKind.Comma);
-
-            return statements.ToImmutable();
+            var statementArr = statements.ToImmutable();
+            return new BlockStatementSyntax(statementArr, @return, new SequenceRange(
+                statementArr.IsDefaultOrEmpty
+                    ? @return is null
+                        ? default
+                        : @return.Location.Start
+                    : statementArr[0].Location.Start,
+                @return is null
+                    ? statementArr.IsDefaultOrEmpty
+                        ? default
+                        : statementArr[^1].Location.End
+                    : @return.Location.End));
         }
 
         static object @true = true;
@@ -234,6 +240,19 @@ namespace BrickLua.Syntax
             return statements.ToImmutable();
         }
 
+        ImmutableArray<ExpressionSyntax> ParseExpressionList()
+        {
+            var statements = ImmutableArray.CreateBuilder<ExpressionSyntax>();
+            statements.Add(ParseExpression());
+            while (current.Kind == SyntaxKind.Comma)
+            {
+                statements.Add(ParseExpression());
+            }
+
+            return statements.ToImmutable();
+        }
+
+
         BreakStatementSyntax ParseBreak()
         {
             var @break = MatchToken(SyntaxKind.Break);
@@ -256,6 +275,105 @@ namespace BrickLua.Syntax
 
             return new DoStatementSyntax(block, From(@do, end));
         }
+
+        WhileStatementExpression ParseWhile()
+        {
+            var @while = MatchToken(SyntaxKind.While);
+            var expression = ParseExpression();
+            MatchToken(SyntaxKind.Do);
+            var body = ParseBlock();
+            var end = MatchToken(SyntaxKind.End);
+
+            return new WhileStatementExpression(expression, body, From(@while, end));
+        }
+
+        RepeatStatementSyntax ParseRepeat()
+        {
+            var repeat = MatchToken(SyntaxKind.Repeat);
+            var body = ParseBlock();
+            MatchToken(SyntaxKind.Until);
+            var expr = ParseExpression();
+
+            return new RepeatStatementSyntax(body, expr, From(repeat, expr));
+        }
+
+        IfStatementSyntax ParseIf()
+        {
+            var @if = MatchToken(SyntaxKind.If);
+            var expr = ParseExpression();
+            var then = MatchToken(SyntaxKind.Then);
+            var body = ParseBlock();
+
+            var elseIfClauses = ImmutableArray.CreateBuilder<ElseIfClauseSyntax>();
+            ElseClauseSyntax? elseClause = null;
+            while (true)
+            {
+                switch (current.Kind)
+                {
+                    case SyntaxKind.ElseIf:
+                        var elif = MatchToken(SyntaxKind.ElseIf);
+                        var elifExpr = ParseExpression();
+                        var elifThen = MatchToken(SyntaxKind.Then);
+                        var elifBody = ParseBlock();
+                        elseIfClauses.Add(new ElseIfClauseSyntax(elifExpr, elifBody, From(elif, GetLast(elifBody.Body, elifThen))));
+                        break;
+                    case SyntaxKind.Else:
+                        var @else = MatchToken(SyntaxKind.If);
+                        var elseBody = ParseBlock();
+                        elseClause = new ElseClauseSyntax(body, From(@else, GetLast(body.Body, @else)));
+                        break;
+                    case SyntaxKind.End:
+                        goto exit;
+                    default:
+                        goto exit;
+                }
+
+            }
+
+            exit:
+
+            var clauses = elseIfClauses.ToImmutable();
+            return new IfStatementSyntax(expr, body, clauses, elseClause, From(@if,
+                elseClause is { } ? elseClause : GetLast(clauses, GetLast(body.Body, then))));
+        }
+
+        StatementSyntax ParseFor()
+        {
+            var @for = MatchToken(SyntaxKind.For);
+            switch (Peek().Kind)
+            {
+                case SyntaxKind.Equals:
+                    var name = MatchToken(SyntaxKind.Name);
+                    MatchToken(SyntaxKind.Equals);
+                    var initial = ParseExpression();
+                    MatchToken(SyntaxKind.Comma);
+                    var limit = ParseExpression();
+                    ExpressionSyntax? step = null;
+                    if (MaybeMatchToken(SyntaxKind.Comma) is { })
+                        step = ParseExpression();
+
+                    MatchToken(SyntaxKind.Do);
+                    var body = ParseBlock();
+                    var end = MatchToken(SyntaxKind.End);
+
+                    return new NumericalForStatementSyntax(name, initial, limit, step, body, From(@for, end));
+                case SyntaxKind.Comma:
+                case SyntaxKind.In:
+                    var list = ParseNameList();
+                    MatchToken(SyntaxKind.In);
+                    var exprs = ParseExpressionList();
+                    MatchToken(SyntaxKind.Do);
+                    var inBody = ParseBlock();
+                    var inEnd = MatchToken(SyntaxKind.End);
+
+                    return new ForStatementSyntax(list, exprs, inBody, From(@for, inEnd));
+                default:
+                    return default!;
+            }
+        }
+
+
+        SyntaxNode GetLast<TNode>(ImmutableArray<TNode> node, SyntaxNode last) where TNode : SyntaxNode => node.IsDefaultOrEmpty ? last : node[^1];
 
         LabelStatementSyntax ParseLabel()
         {

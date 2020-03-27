@@ -49,12 +49,11 @@ namespace BrickLua.Syntax
             {
                 case '\n':
                 case '\r':
-                    goto @continue; // Avoid tail call, inconsistently optimized
-
                 case ' ':
                 case '\f':
                 case '\t':
                 case '\v':
+                    Reader.Advance(1);
                     goto @continue;
 
                 case '+': return LexSingleOperator(SyntaxKind.Plus);

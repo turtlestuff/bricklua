@@ -23,7 +23,7 @@ namespace BrickLua.Syntax
 {
     public class IfStatementSyntax : StatementSyntax
     {
-        public IfStatementSyntax(ExpressionSyntax condition, BlockStatementSyntax consequent, ImmutableArray<ElseIfClauseSyntax> elseIfClauses, BlockStatementSyntax? elseClause, in SequenceRange location) : base(location)
+        public IfStatementSyntax(ExpressionSyntax condition, BlockStatementSyntax consequent, ImmutableArray<ElseIfClauseSyntax> elseIfClauses, ElseClauseSyntax? elseClause, in SequenceRange location) : base(location)
         {
             Condition = condition;
             Consequent = consequent;
@@ -34,6 +34,6 @@ namespace BrickLua.Syntax
         public ExpressionSyntax Condition { get; }
         public BlockStatementSyntax Consequent { get; }
         public ImmutableArray<ElseIfClauseSyntax> ElseIfClauses { get; }
-        public BlockStatementSyntax? ElseClause { get; }
+        public ElseClauseSyntax? ElseClause { get; }
     }
 }

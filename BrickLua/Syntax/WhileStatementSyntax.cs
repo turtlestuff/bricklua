@@ -17,24 +17,18 @@
 //  along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-using System;
-using System.Buffers;
-using BrickLua.Syntax;
-
-namespace BrickLua.Console
+namespace BrickLua.Syntax
 {
-    using Console = System.Console;
-
-    class Program
+    public sealed class WhileStatementExpression : StatementSyntax
     {
-        static void Main(string[] args)
+        public WhileStatementExpression(ExpressionSyntax condition, BlockStatementSyntax body, in SequenceRange location) : base(location)
         {
-            while (true)
-            {
-                var seq = new ReadOnlySequence<char>(Console.ReadLine().AsMemory());
-                var parser = new Parser(new Lexer(new SequenceReader<char>(seq)));
-                parser.ParseFile().WriteTo(Console.Out);
-            }
+            Condition = condition;
+            Body = body;
         }
+
+        public ExpressionSyntax Condition { get; }
+        public BlockStatementSyntax Body { get; }
     }
+
 }

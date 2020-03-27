@@ -19,9 +19,9 @@
 
 namespace BrickLua.Syntax
 {
-    public sealed class RepeatUntilStatementSyntax : StatementSyntax
+    public sealed class RepeatStatementSyntax : StatementSyntax
     {
-        public RepeatUntilStatementSyntax(BlockStatementSyntax body, ExpressionSyntax condition, in SequenceRange location) : base(location)
+        public RepeatStatementSyntax(BlockStatementSyntax body, ExpressionSyntax condition, in SequenceRange location) : base(location)
         {
             Body = body;
             Condition = condition;
