@@ -31,7 +31,6 @@ namespace BrickLua.Syntax
 
         public ImmutableArray<LocalVariableDeclaration> Declarations { get; }
         public ImmutableArray<ExpressionSyntax> Expressions { get; }
-        public override SyntaxKind Kind => SyntaxKind.LocalDeclaration;
     }
 
     public class LocalVariableDeclaration

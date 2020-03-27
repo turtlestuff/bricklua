@@ -29,7 +29,5 @@ namespace BrickLua.Syntax
 
         public SyntaxToken Name { get; }
         public FunctionBody Body { get; }
-
-        public override SyntaxKind Kind => SyntaxKind.LocalFunction;
     }
 }

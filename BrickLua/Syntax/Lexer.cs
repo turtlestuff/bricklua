@@ -26,24 +26,24 @@ namespace BrickLua.Syntax
     [SuppressMessage("Performance", "CA1815:Override equals and operator equals on value types", Justification = "Not an expected scenario")]
     public ref struct Lexer
     {
-        SequenceReader<char> source;
+        public SequenceReader<char> Reader { get; }
         SequencePosition start;
 
         public Lexer(in SequenceReader<char> reader)
         {
-            source = reader;
+            Reader = reader;
             start = default;
         }
 
         public SyntaxToken Lex()
         {
             @continue:
-            if (!source.TryPeek(out var ch))
+            if (!Reader.TryPeek(out var ch))
             {
                 return new SyntaxToken(SyntaxKind.EndOfFile, default);
             }
 
-            start = source.Position;
+            start = Reader.Position;
 
             switch (ch)
             {
@@ -80,24 +80,24 @@ namespace BrickLua.Syntax
                 case ',': return LexSingleOperator(SyntaxKind.Comma);
 
                 case '-':
-                    if (source.TryPeek(out var next) && next >= '0' && next <= '9')
+                    if (Reader.TryPeek(out var next) && next >= '0' && next <= '9')
                     {
                         return LexNumeral();
                     }
 
-                    source.Advance(1);
+                    Reader.Advance(1);
 
                     if (NextIs('-'))
                     {
                         // TODO: Long comments
-                        source.TryAdvanceTo('\n');
+                        Reader.TryAdvanceTo('\n');
                         goto @continue;
                     }
 
                     return NewToken(SyntaxKind.Minus);
 
                 case '.':
-                    source.Advance(1);
+                    Reader.Advance(1);
 
                     if (NextIs('.'))
                     {
@@ -126,9 +126,9 @@ namespace BrickLua.Syntax
 
         SyntaxToken LexIdentifier()
         {
-            source.Advance(1);
-            source.AdvancePastAny("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_");
-            var str = source.Sequence.Slice(start, source.Position);
+            Reader.Advance(1);
+            Reader.AdvancePastAny("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_");
+            var str = Reader.Sequence.Slice(start, Reader.Position);
 
             SyntaxKind type = SyntaxKind.Name;
             if (str.Length <= 8)
@@ -158,9 +158,9 @@ namespace BrickLua.Syntax
             bool negative = NextIs('-');
             if (NextIs('0') && NextIs('X', 'x'))
             {
-                var start = source.Position;
-                source.AdvancePastAny("1234567890ABCDEFabcdef");
-                var str = source.Sequence.Slice(start, source.Position);
+                var start = Reader.Position;
+                Reader.AdvancePastAny("1234567890ABCDEFabcdef");
+                var str = Reader.Sequence.Slice(start, Reader.Position);
 
                 long num = 0;
                 foreach (var memory in str)
@@ -178,13 +178,13 @@ namespace BrickLua.Syntax
                 }
 
                 if (negative) num = -num;
-                token = new SyntaxToken(num, new SequenceRange(this.start, source.Position));
+                token = new SyntaxToken(num, new SequenceRange(this.start, Reader.Position));
                 return true;
             }
             else
             {
-                source.AdvancePastAny("1234567890ABCDEFabcdef");
-                var str = source.Sequence.Slice(start, source.Position);
+                Reader.AdvancePastAny("1234567890ABCDEFabcdef");
+                var str = Reader.Sequence.Slice(start, Reader.Position);
                 long num = 0;
 
                 foreach (var memory in str)
@@ -202,20 +202,20 @@ namespace BrickLua.Syntax
                 }
 
                 if (negative) num = -num;
-                token = new SyntaxToken(num, new SequenceRange(start, source.Position));
+                token = new SyntaxToken(num, new SequenceRange(start, Reader.Position));
                 return true;
             }
         }
 
         SyntaxToken LexSingleOperator(SyntaxKind type)
         {
-            source.Advance(1);
+            Reader.Advance(1);
             return NewToken(type);
         }
 
         SyntaxToken LexDoubleOperator(char next, SyntaxKind one, SyntaxKind two)
         {
-            source.Advance(1);
+            Reader.Advance(1);
             SyntaxKind type = one;
             if (NextIs(next))
             {
@@ -227,7 +227,7 @@ namespace BrickLua.Syntax
 
         SyntaxToken LexDoubleChoiceOperator(char char1, char char2, SyntaxKind none, SyntaxKind type1, SyntaxKind type2)
         {
-            source.Advance(1);
+            Reader.Advance(1);
             SyntaxKind type = none;
             if (NextIs(char1))
             {
@@ -243,9 +243,9 @@ namespace BrickLua.Syntax
 
         bool NextIs(char c)
         {
-            if (source.TryPeek(out var next) && next == c)
+            if (Reader.TryPeek(out var next) && next == c)
             {
-                source.Advance(1);
+                Reader.Advance(1);
                 return true;
             }
 
@@ -254,9 +254,9 @@ namespace BrickLua.Syntax
 
         bool NextIs(char a, char b)
         {
-            if (source.TryPeek(out var next) && (next == a || next == b))
+            if (Reader.TryPeek(out var next) && (next == a || next == b))
             {
-                source.Advance(1);
+                Reader.Advance(1);
                 return true;
             }
 
@@ -264,6 +264,6 @@ namespace BrickLua.Syntax
         }
 
 
-        SyntaxToken NewToken(SyntaxKind type) => new SyntaxToken(type, new SequenceRange(start, source.Position));
+        SyntaxToken NewToken(SyntaxKind type) => new SyntaxToken(type, new SequenceRange(start, Reader.Position));
     }
 }

@@ -17,12 +17,73 @@
 //  along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-using System;
+using System.Collections.Immutable;
 
 namespace BrickLua.Syntax
 {
-    public static class Parser
+    public ref struct Parser
     {
+        SyntaxToken current;
+        SyntaxToken? peek;
 
+        Lexer lexer;
+
+        public Parser(in Lexer lexer)
+        {
+            this.lexer = lexer;
+            current = lexer.Lex();
+            peek = null;
+        }
+
+        SyntaxToken NextToken()
+        {
+            var current = peek ?? this.current;
+            lexer.Lex();
+            if (peek is { }) peek = null;
+            return current;
+        }
+
+        SyntaxToken Peek()
+        {
+            peek ??= lexer.Lex();
+            return peek;
+        }
+
+        SyntaxToken MatchToken(SyntaxKind kind)
+        {
+            if (current.Kind == kind)
+                return NextToken();
+
+            // TODO: Diagnostics
+            return new SyntaxToken(kind, default);
+        }
+
+        SequenceRange From(SyntaxToken first, SyntaxToken last) => new SequenceRange(first.Location.Start, last.Location.End);
+
+
+        public ChunkSyntax ParseFile()
+        {
+            var members = ImmutableArray.CreateBuilder<StatementSyntax>();
+            while (current.Kind != SyntaxKind.EndOfFile)
+            {
+                members.Add(ParseStatement());
+            }
+
+            var pos = new SequenceRange(lexer.Reader.Sequence.GetPosition(0), lexer.Reader.Position);
+            return new ChunkSyntax(new BlockStatementSyntax(members.ToImmutable(), null, pos), pos);
+        }
+
+        StatementSyntax ParseStatement()
+        {
+            @continue:
+            switch (current.Kind)
+            {
+                case SyntaxKind.Semicolon:
+                    // Empty statement, don't bother
+                    goto @continue;
+            }
+
+            return default;
+        }
     }
 }

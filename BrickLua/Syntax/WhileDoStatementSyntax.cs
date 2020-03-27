@@ -29,7 +29,6 @@ namespace BrickLua.Syntax
 
         public ExpressionSyntax Condition { get; }
         public BlockStatementSyntax Body { get; }
-        public override SyntaxKind Kind => SyntaxKind.WhileDo;
     }
 
 }

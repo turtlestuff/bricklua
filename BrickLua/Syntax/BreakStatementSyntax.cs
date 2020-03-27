@@ -17,6 +17,8 @@
 //  along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.
 //
 
+using System.Collections.Immutable;
+
 namespace BrickLua.Syntax
 {
     public sealed class BreakStatementSyntax : StatementSyntax
@@ -24,7 +26,12 @@ namespace BrickLua.Syntax
         public BreakStatementSyntax(in SequenceRange location) : base(location)
         {
         }
+    }
 
-        public override SyntaxKind Kind => SyntaxKind.BreakStatement;
+    public abstract class PrefixExpressionSyntax : ExpressionSyntax
+    {
+        protected PrefixExpressionSyntax(in SequenceRange location) : base(location)
+        {
+        }
     }
 }

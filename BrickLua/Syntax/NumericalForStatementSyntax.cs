@@ -35,6 +35,5 @@ namespace BrickLua.Syntax
         public ExpressionSyntax Limit { get; }
         public ExpressionSyntax? Step { get; }
         public BlockStatementSyntax Body { get; }
-        public override SyntaxKind Kind => SyntaxKind.NumericalFor;
     }
 }

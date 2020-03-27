@@ -27,6 +27,5 @@ namespace BrickLua.Syntax
         }
 
         public SequenceRange Location { get; }
-        public abstract SyntaxKind Kind { get; }
     }
 }

@@ -29,6 +29,5 @@ namespace BrickLua.Syntax
 
         public ExpressionSyntax Test { get; }
         public BlockStatementSyntax Consequent { get; }
-        public override SyntaxKind Kind => SyntaxKind.ElseIfClause;
     }
 }

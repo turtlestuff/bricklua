@@ -27,7 +27,6 @@ namespace BrickLua.Syntax
         }
 
         public SyntaxToken Label { get; }
-        public override SyntaxKind Kind => SyntaxKind.GotoStatement;
     }
 
 }

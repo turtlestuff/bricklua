@@ -40,7 +40,7 @@ namespace BrickLua.Syntax
         }
 
         public long IntegerData { get; }
-        public override SyntaxKind Kind { get; }
+        public SyntaxKind Kind { get; }
 
         public double FloatData
         {

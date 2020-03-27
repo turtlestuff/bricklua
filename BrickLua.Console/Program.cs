@@ -32,15 +32,10 @@ namespace BrickLua.Console
             while (true)
             {
                 var seq = new ReadOnlySequence<char>(Console.ReadLine().AsMemory());
-                var lexer = new Lexer(new SequenceReader<char>(seq));
-                while (lexer.Lex() is SyntaxToken t && t.Kind != SyntaxKind.EndOfFile)
+                var parser = new Parser(new Lexer(new SequenceReader<char>(seq)));
+                foreach (var statement in parser.ParseFile().Body.Body)
                 {
-                    Console.WriteLine(@$"{t.Kind}: {seq.Slice(t.SourceRange.Start, t.SourceRange.End)} {t.Kind switch
-                    {
-                        SyntaxKind.IntegerConstant => t.IntegerData.ToString(),
-                        SyntaxKind.FloatConstant => t.FloatData.ToString(),
-                        _ => ""
-                    }}");
+                    Console.WriteLine(statement.ToString());
                 }
             }
         }

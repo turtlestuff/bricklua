@@ -31,7 +31,6 @@ namespace BrickLua.Syntax
 
         public FunctionName Name { get; }
         public FunctionBody Body { get; }
-        public override SyntaxKind Kind => SyntaxKind.FunctionStatement;
     }
 
     public sealed class FunctionName

@@ -35,6 +35,5 @@ namespace BrickLua.Syntax
         public BlockStatementSyntax Consequent { get; }
         public ImmutableArray<ElseIfClauseSyntax> ElseIfClauses { get; }
         public BlockStatementSyntax? ElseClause { get; }
-        public override SyntaxKind Kind => SyntaxKind.IfStatement;
     }
 }

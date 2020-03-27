@@ -17,21 +17,18 @@
 //  along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-using System.Collections.Immutable;
-
 namespace BrickLua.Syntax
 {
-    public sealed class ForStatementSyntax : StatementSyntax
+    public sealed class UnaryExpressionSyntax : ExpressionSyntax
     {
-        public ForStatementSyntax(ImmutableArray<SyntaxToken> nameList, ImmutableArray<ExpressionSyntax> expressionList, BlockStatementSyntax body, in SequenceRange location) : base(location)
+        public UnaryExpressionSyntax(SyntaxKind @operator, ExpressionSyntax operand, in SequenceRange location) : base(location)
         {
-            NameList = nameList;
-            ExpressionList = expressionList;
-            Body = body;
+            Operator = @operator;
+            Operand = operand;
         }
 
-        public ImmutableArray<SyntaxToken> NameList { get; }
-        public ImmutableArray<ExpressionSyntax> ExpressionList { get; }
-        public BlockStatementSyntax Body { get; }
+        public SyntaxKind Operator { get; }
+        public ExpressionSyntax Operand { get; }
     }
+
 }

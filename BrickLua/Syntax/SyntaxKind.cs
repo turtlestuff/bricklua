@@ -87,22 +87,5 @@ namespace BrickLua.Syntax
         Dot,
         DotDot,
         DotDotDot,
-
-        // Statements
-        RepeatUntil,
-        LocalFunction,
-        ReturnStatement,
-        NumericalFor,
-        LocalDeclaration,
-        IfStatement,
-        GotoStatement,
-        FunctionStatement,
-        ForStatement,
-        ElseIfClause,
-        DoStatement,
-        BreakStatement,
-        Block,
-        Chunk,
-        WhileDo
     }
 }

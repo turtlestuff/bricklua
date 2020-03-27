@@ -27,7 +27,6 @@ namespace BrickLua.Syntax
         }
 
         public BlockStatementSyntax Body { get; }
-        public override SyntaxKind Kind => SyntaxKind.DoStatement;
     }
 
 }
