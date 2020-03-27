@@ -26,7 +26,7 @@ namespace BrickLua.Syntax
     [SuppressMessage("Performance", "CA1815:Override equals and operator equals on value types", Justification = "Not an expected scenario")]
     public ref struct Lexer
     {
-        public SequenceReader<char> Reader { get; }
+        public SequenceReader<char> Reader;
         SequencePosition start;
 
         public Lexer(in SequenceReader<char> reader)
@@ -81,9 +81,7 @@ namespace BrickLua.Syntax
 
                 case '-':
                     if (Reader.TryPeek(out var next) && next >= '0' && next <= '9')
-                    {
                         return LexNumeral();
-                    }
 
                     Reader.Advance(1);
 
@@ -100,14 +98,10 @@ namespace BrickLua.Syntax
                     Reader.Advance(1);
 
                     if (NextIs('.'))
-                    {
                         if (NextIs('.'))
-                        {
                             return NewToken(SyntaxKind.DotDotDot);
-                        }
-
-                        return NewToken(SyntaxKind.DotDot);
-                    }
+                        else
+                            return NewToken(SyntaxKind.DotDot);
 
                     return NewToken(SyntaxKind.Dot);
 
@@ -138,7 +132,7 @@ namespace BrickLua.Syntax
                 type = SyntaxFacts.GetIdentifierKind(span);
             }
 
-            return NewToken(type);
+            return new SyntaxToken(type, str.ToString(), new SequenceRange(start, Reader.Position));
         }
 
         SyntaxToken LexNumeral()

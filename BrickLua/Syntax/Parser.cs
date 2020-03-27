@@ -18,7 +18,6 @@
 //
 
 using System.Collections.Immutable;
-using System.Text.RegularExpressions;
 
 namespace BrickLua.Syntax
 {
@@ -32,14 +31,22 @@ namespace BrickLua.Syntax
         public Parser(in Lexer lexer)
         {
             this.lexer = lexer;
-            current = lexer.Lex();
+            current = this.lexer.Lex();
             peek = null;
         }
 
         SyntaxToken NextToken()
         {
             var current = this.current;
-            current = peek ?? lexer.Lex();
+            if (peek is null)
+            {
+                var lex = lexer.Lex();
+                this.current = lex;
+            }
+            else
+            {
+                this.current = peek;
+            }
             if (peek is { }) peek = null;
             return current;
         }
@@ -129,9 +136,9 @@ namespace BrickLua.Syntax
                 SyntaxKind.Nil => new LiteralExpressionSyntax(null, MatchToken(SyntaxKind.Nil).Location),
                 SyntaxKind.True => new LiteralExpressionSyntax(@true, MatchToken(SyntaxKind.True).Location),
                 SyntaxKind.False => new LiteralExpressionSyntax(@false, MatchToken(SyntaxKind.False).Location),
-                SyntaxKind.IntegerConstant => new LiteralExpressionSyntax(current.IntegerData, MatchToken(SyntaxKind.IntegerConstant).Location),
-                SyntaxKind.FloatConstant => new LiteralExpressionSyntax(current.FloatData, MatchToken(SyntaxKind.FloatConstant).Location),
-                SyntaxKind.StringLiteral => new LiteralExpressionSyntax(lexer.Reader.Sequence.Slice(current.Location.Start, current.Location.End).ToString(), MatchToken(SyntaxKind.StringLiteral).Location),
+                SyntaxKind.IntegerConstant => new LiteralExpressionSyntax((long) current.Value!, MatchToken(SyntaxKind.IntegerConstant).Location),
+                SyntaxKind.FloatConstant => new LiteralExpressionSyntax((double) current.Value!, MatchToken(SyntaxKind.FloatConstant).Location),
+                SyntaxKind.StringLiteral => new LiteralExpressionSyntax((string) current.Value!, MatchToken(SyntaxKind.StringLiteral).Location),
                 SyntaxKind.DotDotDot => new VarargExpressionSyntax(MatchToken(SyntaxKind.DotDotDot).Location),
                 SyntaxKind.OpenBrace => ParseTableConstructor(),
                 SyntaxKind.Function => ParseFunctionExpression(),

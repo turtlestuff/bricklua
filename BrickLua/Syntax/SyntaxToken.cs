@@ -26,29 +26,26 @@ namespace BrickLua.Syntax
         public SyntaxToken(SyntaxKind kind, in SequenceRange location) : base(location)
         {
             Kind = kind;
-            IntegerData = default;
+            Value = default;
         }
 
-        public SyntaxToken(long numericData, in SequenceRange location) : this(SyntaxKind.IntegerConstant, location)
+        public SyntaxToken(SyntaxKind kind, object value, in SequenceRange location) : base(location)
         {
-            IntegerData = numericData;
+            Kind = kind;
+            Value = value;
         }
 
-        public SyntaxToken(double numericData, in SequenceRange location) : this(SyntaxKind.FloatConstant, location)
+        public SyntaxToken(long value, in SequenceRange location) : this(SyntaxKind.IntegerConstant, location)
         {
-            IntegerData = Unsafe.As<double, long>(ref numericData);
+            Value = value;
         }
 
-        public long IntegerData { get; }
+        public SyntaxToken(double value, in SequenceRange location) : this(SyntaxKind.FloatConstant, location)
+        {
+            Value = value;
+        }
+
+        public object? Value { get; }
         public SyntaxKind Kind { get; }
-
-        public double FloatData
-        {
-            get
-            {
-                var data = IntegerData;
-                return Unsafe.As<long, double>(ref data);
-            }
-        }
     }
 }

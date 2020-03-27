@@ -33,10 +33,8 @@ namespace BrickLua.Console
             {
                 var seq = new ReadOnlySequence<char>(Console.ReadLine().AsMemory());
                 var parser = new Parser(new Lexer(new SequenceReader<char>(seq)));
-                foreach (var statement in parser.ParseFile().Body.Body)
-                {
-                    Console.WriteLine(statement.ToString());
-                }
+
+                parser.ParseFile().WriteTo(Console.Out);
             }
         }
     }
