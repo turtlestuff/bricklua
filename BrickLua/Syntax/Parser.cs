@@ -18,6 +18,7 @@
 //
 
 using System.Collections.Immutable;
+using System.Linq.Expressions;
 
 namespace BrickLua.Syntax
 {
@@ -58,32 +59,99 @@ namespace BrickLua.Syntax
             return new SyntaxToken(kind, default);
         }
 
-        SequenceRange From(SyntaxToken first, SyntaxToken last) => new SequenceRange(first.Location.Start, last.Location.End);
+        SyntaxToken MaybeMatchToken(SyntaxKind kind)
+        {
+            if (current.Kind == kind)
+                return NextToken();
 
+            return null;
+        }
+
+
+        SequenceRange From(SyntaxNode first, SyntaxNode last) => new SequenceRange(first.Location.Start, last.Location.End);
 
         public ChunkSyntax ParseFile()
         {
-            var members = ImmutableArray.CreateBuilder<StatementSyntax>();
-            while (current.Kind != SyntaxKind.EndOfFile)
-            {
-                members.Add(ParseStatement());
-            }
-
-            var pos = new SequenceRange(lexer.Reader.Sequence.GetPosition(0), lexer.Reader.Position);
-            return new ChunkSyntax(new BlockStatementSyntax(members.ToImmutable(), null, pos), pos);
+            var block = ParseBlock();
+            return new ChunkSyntax(block, block.Location);
         }
 
-        StatementSyntax ParseStatement()
+        StatementSyntax ParseStatement() => current.Kind switch
         {
-            @continue:
-            switch (current.Kind)
+            SyntaxKind.Semicolon => ParseStatement(),
+            SyntaxKind.Break => ParseBreak(),
+            SyntaxKind.Goto => ParseGoto(),
+            SyntaxKind.Do => ParseDo(),
+            SyntaxKind.ColonColon => ParseLabel(),
+            _ => default!,
+        };
+
+        BlockStatementSyntax ParseBlock()
+        {
+            var statements = ImmutableArray.CreateBuilder<StatementSyntax>();
+
+            while (current.Kind != SyntaxKind.Return && current.Kind != SyntaxKind.EndOfFile)
             {
-                case SyntaxKind.Semicolon:
-                    // Empty statement, don't bother
-                    goto @continue;
+                statements.Add(ParseStatement());
             }
 
+            ReturnStatementSyntax? syntax = null;
+            if (current.Kind == SyntaxKind.Return)
+            {
+                var returnValues = ParseExpressionList();
+                var semi = MaybeMatchToken(SyntaxKind.Semicolon);
+                syntax = new ReturnStatementSyntax(returnValues, From(returnValues[0], semi ?? (SyntaxNode) returnValues[^1]));
+            }
+
+            return new BlockStatementSyntax(statements.ToImmutable(), syntax, From(statements[0], syntax ?? statements[^1]));
+        }
+
+        ImmutableArray<ExpressionSyntax> ParseExpressionList()
+        {
+            var statements = ImmutableArray.CreateBuilder<ExpressionSyntax>();
+            do
+            {
+                statements.Add(ParseExpression());
+            } while (Peek().Kind == SyntaxKind.Comma);
+
+            return statements.ToImmutable();
+        }
+
+        ExpressionSyntax ParseExpression()
+        {
             return default;
+        }
+
+        BreakStatementSyntax ParseBreak()
+        {
+            var @break = MatchToken(SyntaxKind.Break);
+            return new BreakStatementSyntax(@break.Location);
+        }
+
+        GotoStatementSyntax ParseGoto()
+        {
+            var @goto = MatchToken(SyntaxKind.Goto);
+            var name = MatchToken(SyntaxKind.Name);
+
+            return new GotoStatementSyntax(name, From(@goto, name));
+        }
+
+        DoStatementSyntax ParseDo()
+        {
+            var @do = MatchToken(SyntaxKind.Do);
+            var block = ParseBlock();
+            var end = MatchToken(SyntaxKind.End);
+
+            return new DoStatementSyntax(block, From(@do, end));
+        }
+
+        LabelStatementSyntax ParseLabel()
+        {
+            var first = MatchToken(SyntaxKind.ColonColon);
+            var name = MatchToken(SyntaxKind.Name);
+            var last = MatchToken(SyntaxKind.ColonColon);
+
+            return new LabelStatementSyntax(name, From(first, last));
         }
     }
 }
