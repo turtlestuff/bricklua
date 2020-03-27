@@ -20,7 +20,6 @@
 using System;
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 
 namespace BrickLua.Syntax
 {
@@ -144,14 +143,12 @@ namespace BrickLua.Syntax
 
         Token LexNumeral()
         {
+            // TODO: Replace/enhance hex parsing code with https://github.com/dotnet/runtime/issues/1630
+
             if (LexInteger(out var token))
             {
                 return token;
             }
-            /*else if (LexFloat(out token))
-            {
-                return token;
-            }*/
 
             return default;
         }
@@ -243,8 +240,6 @@ namespace BrickLua.Syntax
 
             return NewToken(type);
         }
-
-
 
         bool NextIs(char c)
         {

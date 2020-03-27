@@ -21,23 +21,8 @@ using System;
 
 namespace BrickLua.Syntax
 {
-    public readonly struct SequenceRange : IEquatable<SequenceRange>
+    public static class Parser
     {
-        public SequenceRange(SequencePosition start, SequencePosition end)
-        {
-            Start = start;
-            End = end;
-        }
 
-        public SequencePosition Start { get; }
-        public SequencePosition End { get; }
-
-        public override bool Equals(object obj) => obj is SequenceRange span ? Equals(span) : false;
-        public override int GetHashCode() => HashCode.Combine(Start, End);
-
-        public static bool operator ==(SequenceRange left, SequenceRange right) => left.Equals(right);
-        public static bool operator !=(SequenceRange left, SequenceRange right) => !(left == right);
-
-        public bool Equals(SequenceRange other) => Start.Equals(other.Start) && End.Equals(other.End);
     }
 }
