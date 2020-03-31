@@ -29,17 +29,17 @@ namespace BrickLua.Syntax
         }
 
         public ImmutableArray<FieldAssignmentExpressionSyntax> FieldAssignments { get; }
+    }
 
-        public sealed class FieldAssignmentExpressionSyntax : ExpressionSyntax
+    public sealed class FieldAssignmentExpressionSyntax : ExpressionSyntax
+    {
+        public FieldAssignmentExpressionSyntax(SyntaxNode field, ExpressionSyntax? value, in SequenceRange location) : base(location)
         {
-            public FieldAssignmentExpressionSyntax(SyntaxNode field, ExpressionSyntax? value, in SequenceRange location) : base(location)
-            {
-                Field = field;
-                Value = value;
-            }
-
-            public SyntaxNode Field { get; }
-            public ExpressionSyntax? Value { get; }
+            Field = field;
+            Value = value;
         }
+
+        public SyntaxNode Field { get; }
+        public ExpressionSyntax? Value { get; }
     }
 }

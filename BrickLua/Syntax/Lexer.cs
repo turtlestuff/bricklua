@@ -20,6 +20,7 @@
 using System;
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 
 namespace BrickLua.Syntax
 {
@@ -155,20 +156,7 @@ namespace BrickLua.Syntax
                 Reader.AdvancePastAny("1234567890ABCDEFabcdef");
                 var str = Reader.Sequence.Slice(start, Reader.Position);
 
-                long num = 0;
-                foreach (var memory in str)
-                {
-                    static int HexToValue(char c)
-                    {
-                        if (char.IsDigit(c)) return c - '0';
-                        else return char.ToLowerInvariant(c) - 'a' + 10;
-                    }
-
-                    foreach (var ch in memory.Span)
-                    {
-                        num = num * 16 + HexToValue(ch);
-                    }
-                }
+                var num = long.Parse(str.IsSingleSegment ? str.FirstSpan : str.ToArray(), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
 
                 if (negative) num = -num;
                 token = new SyntaxToken(num, new SequenceRange(this.start, Reader.Position));

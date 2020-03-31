@@ -39,7 +39,8 @@ namespace BrickLua.Syntax
             PrettyPrint(writer, this);
         }
 
-        private static void PrettyPrint(TextWriter writer, SyntaxNode node, string indent = "", bool isLast = true)
+        //
+        static void PrettyPrint(TextWriter writer, SyntaxNode node, string indent = "", bool isLast = true)
         {
             static IEnumerable<SyntaxNode> GetChildren(SyntaxNode source)
             {
@@ -78,12 +79,26 @@ namespace BrickLua.Syntax
             if (isToConsole)
                 Console.ForegroundColor = node is SyntaxToken ? ConsoleColor.Blue : ConsoleColor.Cyan;
 
-            writer.Write(node.GetType().GetProperties().FirstOrDefault(a => a.PropertyType == typeof(SyntaxKind)) is { } prop ? prop.GetValue(node)!.ToString() : node.GetType().Name);
+            var name = node.GetType().GetProperties().FirstOrDefault(a => a.PropertyType == typeof(SyntaxKind)) is { } prop ?
+                prop.GetValue(node)!.ToString()! :
+                node.GetType().Name;
+
+            if (name.EndsWith("Syntax", StringComparison.InvariantCulture))
+                name = name[..^6];
+
+
+            writer.Write(name);
 
             if (node is SyntaxToken { Value: var val })
             {
                 writer.Write(" ");
                 writer.Write(val);
+            }
+
+            if (node is LiteralExpressionSyntax { Value: var literalVal })
+            {
+                writer.Write(" ");
+                writer.Write(literalVal);
             }
 
             if (isToConsole)

@@ -35,13 +35,13 @@ namespace BrickLua.Syntax
 
     public class LocalVariableDeclaration
     {
-        public LocalVariableDeclaration(SyntaxToken name, SyntaxToken attribute)
+        public LocalVariableDeclaration(SyntaxToken name, SyntaxToken? attribute)
         {
             Name = name;
             Attribute = attribute;
         }
 
         public SyntaxToken Name { get; }
-        public SyntaxToken Attribute { get; }
+        public SyntaxToken? Attribute { get; }
     }
 }

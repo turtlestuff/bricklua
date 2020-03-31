@@ -35,7 +35,13 @@ namespace BrickLua.Syntax
 
     public sealed class FunctionName
     {
-        public ImmutableArray<SyntaxToken> Name { get; }
-        public SyntaxToken MemberName { get; }
+        public FunctionName(ImmutableArray<SyntaxToken> dottedNames, SyntaxToken? memberName)
+        {
+            DottedNames = dottedNames;
+            MemberName = memberName;
+        }
+
+        public ImmutableArray<SyntaxToken> DottedNames { get; }
+        public SyntaxToken? MemberName { get; }
     }
 }

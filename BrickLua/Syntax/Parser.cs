@@ -18,8 +18,7 @@
 //
 
 using System.Collections.Immutable;
-using System.Data;
-using System.Runtime.InteropServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace BrickLua.Syntax
 {
@@ -64,12 +63,16 @@ namespace BrickLua.Syntax
         }
 
 
-        SyntaxToken? MaybeMatchToken(SyntaxKind kind)
+        bool CurrentIs(SyntaxKind kind, [NotNullWhen(true)] out SyntaxToken? token)
         {
             if (current.Kind == kind)
-                return NextToken();
+            {
+                token = NextToken();
+                return true;
+            }
 
-            return null;
+            token = null;
+            return false;
         }
 
         bool IsNot(SyntaxKind kind) => current.Kind != kind && current.Kind != SyntaxKind.EndOfFile;
@@ -117,11 +120,71 @@ namespace BrickLua.Syntax
             SyntaxKind.Repeat => ParseRepeat(),
             SyntaxKind.If => ParseIf(),
             SyntaxKind.For => ParseFor(),
-            /*SyntaxKind.Function => ParseFunction(),
-            SyntaxKind.Local => ParseLocal(),*/
+            SyntaxKind.Function => ParseFunction(),
+            SyntaxKind.Local => ParseLocal(),
             SyntaxKind.ColonColon => ParseLabel(),
             _ => null,
         };
+
+        FunctionStatementSyntax ParseFunction()
+        {
+            var function = MatchToken(SyntaxKind.Function);
+            var name = ParseFunctionName();
+            var body = ParseFunctionBody();
+            return new FunctionStatementSyntax(name, body, From(function, body.Body));
+        }
+
+        FunctionName ParseFunctionName()
+        {
+            var builder = ImmutableArray.CreateBuilder<SyntaxToken>();
+            do
+            {
+                builder.Add(MatchToken(SyntaxKind.Name));
+            } while (CurrentIs(SyntaxKind.Dot, out _));
+
+            var memberName = CurrentIs(SyntaxKind.Colon, out _) ? MatchToken(SyntaxKind.Name) : null;
+            return new FunctionName(builder.ToImmutable(), memberName);
+        }
+
+        StatementSyntax ParseLocal()
+        {
+            var local = MatchToken(SyntaxKind.Local);
+            if (CurrentIs(SyntaxKind.Function, out _))
+            {
+                var name = MatchToken(SyntaxKind.Name);
+                var body = ParseFunctionBody();
+
+                return new LocalFunctionStatementSyntax(name, body, From(local, body.Body));
+            }
+            else
+            {
+                var declarations = ParseNameAttributeList();
+                var expressions = CurrentIs(SyntaxKind.Equals, out var eq) ? ParseExpressionList() : ImmutableArray<ExpressionSyntax>.Empty;
+
+                return new LocalDeclarationStatementSyntax(declarations, expressions, From(local, expressions.IsDefaultOrEmpty ? declarations[^1].Name : GetLast(expressions, eq!)));
+            }
+        }
+
+        ImmutableArray<LocalVariableDeclaration> ParseNameAttributeList()
+        {
+            var builder = ImmutableArray.CreateBuilder<LocalVariableDeclaration>();
+            do
+            {
+                var name = MatchToken(SyntaxKind.Name);
+                SyntaxToken? attrib = null;
+                if (CurrentIs(SyntaxKind.Less, out _))
+                {
+                    attrib = MatchToken(SyntaxKind.Name);
+                    MatchToken(SyntaxKind.Greater);
+                }
+
+                builder.Add(new LocalVariableDeclaration(name, attrib));
+
+            } while (CurrentIs(SyntaxKind.Comma, out _));
+
+            return builder.ToImmutable();
+        }
+
 
         BlockStatementSyntax ParseBlock()
         {
@@ -134,11 +197,11 @@ namespace BrickLua.Syntax
             }
 
             ReturnStatementSyntax? @return = null;
-            if (MaybeMatchToken(SyntaxKind.Return) is { } returnToken)
+            if (CurrentIs(SyntaxKind.Return, out var returnToken))
             {
                 var returnValues = StartsExpression(current) ? ParseExpressionList() : ImmutableArray<ExpressionSyntax>.Empty;
 
-                var semi = MaybeMatchToken(SyntaxKind.Semicolon);
+                CurrentIs(SyntaxKind.Semicolon, out var semi);
                 @return = new ReturnStatementSyntax(returnValues, From(returnToken, semi ?? GetLast(returnValues, returnToken)));
             }
 
@@ -200,7 +263,6 @@ namespace BrickLua.Syntax
             SyntaxKind.OpenBrace => ParseTableConstructor(),
             SyntaxKind.Function => ParseFunctionExpression(),
             _ => ParsePrefixExpression()
-            //SyntaxKind.OpenParenthesis => ParsePrefixExpression(),
         };
 
         ExpressionSyntax ParsePrefixExpression()
@@ -223,7 +285,7 @@ namespace BrickLua.Syntax
 
         TableConstructorExpressionSyntax ParseTableConstructor()
         {
-            var statements = ImmutableArray.CreateBuilder<TableConstructorExpressionSyntax.FieldAssignmentExpressionSyntax>();
+            var statements = ImmutableArray.CreateBuilder<FieldAssignmentExpressionSyntax>();
             var start = MatchToken(SyntaxKind.OpenBrace);
             while (IsNot(SyntaxKind.CloseBrace))
             {
@@ -248,7 +310,7 @@ namespace BrickLua.Syntax
                         break;
                 }
 
-                statements.Add(new TableConstructorExpressionSyntax.FieldAssignmentExpressionSyntax(target, value, From(target, value ?? target)));
+                statements.Add(new FieldAssignmentExpressionSyntax(target, value, From(target, value ?? target)));
 
                 if (current.Kind == SyntaxKind.Semicolon || current.Kind == SyntaxKind.Comma)
                 {
@@ -280,7 +342,7 @@ namespace BrickLua.Syntax
             MatchToken(SyntaxKind.CloseParenthesis);
 
             var body = ParseBlock();
-            MatchToken(SyntaxKind.End);
+            MatchToken(SyntaxKind.OpenParenthesis);
             return new FunctionBody(names, isVararg, body);
         }
 
@@ -323,15 +385,14 @@ namespace BrickLua.Syntax
         ImmutableArray<ExpressionSyntax> ParseExpressionList()
         {
             var statements = ImmutableArray.CreateBuilder<ExpressionSyntax>();
-            statements.Add(ParseExpression());
-            while (current.Kind == SyntaxKind.Comma)
+
+            do
             {
                 statements.Add(ParseExpression());
-            }
+            } while (CurrentIs(SyntaxKind.Comma, out _));
 
             return statements.ToImmutable();
         }
-
 
         BreakStatementSyntax ParseBreak()
         {
@@ -429,7 +490,7 @@ namespace BrickLua.Syntax
                     MatchToken(SyntaxKind.Comma);
                     var limit = ParseExpression();
                     ExpressionSyntax? step = null;
-                    if (MaybeMatchToken(SyntaxKind.Comma) is { })
+                    if (CurrentIs(SyntaxKind.Comma, out _))
                         step = ParseExpression();
 
                     MatchToken(SyntaxKind.Do);
