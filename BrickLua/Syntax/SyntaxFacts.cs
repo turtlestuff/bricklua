@@ -23,6 +23,73 @@ namespace BrickLua.Syntax
 {
     public static class SyntaxFacts
     {
+        public static int UnaryOperatorPrecedence(SyntaxKind kind)
+        {
+            switch (kind)
+            {
+                case SyntaxKind.Caret:
+                    return 12;
+                case SyntaxKind.Not:
+                case SyntaxKind.Hash:
+                case SyntaxKind.Minus:
+                case SyntaxKind.Tilde:
+                    return 11;
+
+                default:
+                    return 0;
+            }
+        }
+
+        public static int BinaryOperatorPrecedence(SyntaxKind kind)
+        {
+            switch (kind)
+            {
+                case SyntaxKind.Asterisk:
+                case SyntaxKind.Slash:
+                case SyntaxKind.SlashSlash:
+                case SyntaxKind.Percent:
+                    return 10;
+
+                case SyntaxKind.Plus:
+                case SyntaxKind.Minus:
+                    return 9;
+
+                case SyntaxKind.DotDot:
+                    return 8;
+
+                case SyntaxKind.GreaterGreater:
+                case SyntaxKind.LessLess:
+                    return 7;
+
+                case SyntaxKind.Ampersand:
+                    return 6;
+
+                case SyntaxKind.Tilde:
+                    return 5;
+
+                case SyntaxKind.Pipe:
+                    return 4;
+
+                case SyntaxKind.Less:
+                case SyntaxKind.Greater:
+                case SyntaxKind.LessEquals:
+                case SyntaxKind.GreaterEquals:
+                case SyntaxKind.TildeEquals:
+                case SyntaxKind.EqualsEquals:
+                    return 3;
+
+                case SyntaxKind.And:
+                    return 2;
+
+                case SyntaxKind.Or:
+                    return 1;
+
+                default:
+                    return 0;
+            }
+        }
+
+
         // TODO: Replace with https://github.com/dotnet/csharplang/issues/1881
 
         public static SyntaxKind GetIdentifierKind(ReadOnlySpan<char> input) => input.Length switch

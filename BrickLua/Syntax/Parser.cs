@@ -19,6 +19,7 @@
 
 using System.Collections.Immutable;
 using System.Data;
+using System.Runtime.InteropServices;
 
 namespace BrickLua.Syntax
 {
@@ -71,6 +72,32 @@ namespace BrickLua.Syntax
             return null;
         }
 
+        bool IsNot(SyntaxKind kind) => current.Kind != kind && current.Kind != SyntaxKind.EndOfFile;
+
+        static bool StartsExpression(SyntaxToken token)
+        {
+            switch (token.Kind)
+            {
+                case SyntaxKind.Name:
+                case SyntaxKind.IntegerConstant:
+                case SyntaxKind.FloatConstant:
+                case SyntaxKind.StringLiteral:
+                case SyntaxKind.Nil:
+                case SyntaxKind.True:
+                case SyntaxKind.False:
+                case SyntaxKind.Minus:
+                case SyntaxKind.Not:
+                case SyntaxKind.Hash:
+                case SyntaxKind.Tilde:
+                case SyntaxKind.Function:
+                case SyntaxKind.OpenParenthesis:
+                case SyntaxKind.OpenBrace:
+                case SyntaxKind.DotDotDot:
+                    return true;
+                default:
+                    return false;
+            }
+        }
 
         SequenceRange From(SyntaxNode first, SyntaxNode last) => new SequenceRange(first.Location.Start, last.Location.End);
 
@@ -92,9 +119,7 @@ namespace BrickLua.Syntax
             SyntaxKind.For => ParseFor(),
             /*SyntaxKind.Function => ParseFunction(),
             SyntaxKind.Local => ParseLocal(),*/
-
             SyntaxKind.ColonColon => ParseLabel(),
-            // Not a valid statement.
             _ => null,
         };
 
@@ -103,19 +128,19 @@ namespace BrickLua.Syntax
             var statements = ImmutableArray.CreateBuilder<StatementSyntax>();
 
             StatementSyntax? statement;
-            while (current.Kind != SyntaxKind.Return && current.Kind != SyntaxKind.EndOfFile && (statement = ParseStatement()) != null)
+            while ((statement = ParseStatement()) != null)
             {
                 statements.Add(statement);
             }
 
             ReturnStatementSyntax? @return = null;
-            if (MaybeMatchToken(SyntaxKind.Return) is { })
+            if (MaybeMatchToken(SyntaxKind.Return) is { } returnToken)
             {
-                var returnValues = ParseExpressionList();
-                var semi = MaybeMatchToken(SyntaxKind.Semicolon);
-                @return = new ReturnStatementSyntax(returnValues, From(returnValues[0], semi ?? (SyntaxNode) returnValues[^1]));
-            }
+                var returnValues = StartsExpression(current) ? ParseExpressionList() : ImmutableArray<ExpressionSyntax>.Empty;
 
+                var semi = MaybeMatchToken(SyntaxKind.Semicolon);
+                @return = new ReturnStatementSyntax(returnValues, From(returnToken, semi ?? GetLast(returnValues, returnToken)));
+            }
 
             var statementArr = statements.ToImmutable();
             return new BlockStatementSyntax(statementArr, @return, new SequenceRange(
@@ -134,22 +159,53 @@ namespace BrickLua.Syntax
         static object @true = true;
         static object @false = false;
 
-        ExpressionSyntax ParseExpression()
+        ExpressionSyntax ParseExpression(int parentPrecedence = 0)
         {
-            return current.Kind switch
+            ExpressionSyntax left;
+            var unaryOperatorPrecedence = SyntaxFacts.UnaryOperatorPrecedence(current.Kind);
+            if (unaryOperatorPrecedence != 0 && unaryOperatorPrecedence >= parentPrecedence)
             {
-                SyntaxKind.Semicolon => ParseNextExpression(),
-                SyntaxKind.Nil => new LiteralExpressionSyntax(null, MatchToken(SyntaxKind.Nil).Location),
-                SyntaxKind.True => new LiteralExpressionSyntax(@true, MatchToken(SyntaxKind.True).Location),
-                SyntaxKind.False => new LiteralExpressionSyntax(@false, MatchToken(SyntaxKind.False).Location),
-                SyntaxKind.IntegerConstant => new LiteralExpressionSyntax((long) current.Value!, MatchToken(SyntaxKind.IntegerConstant).Location),
-                SyntaxKind.FloatConstant => new LiteralExpressionSyntax((double) current.Value!, MatchToken(SyntaxKind.FloatConstant).Location),
-                SyntaxKind.StringLiteral => new LiteralExpressionSyntax((string) current.Value!, MatchToken(SyntaxKind.StringLiteral).Location),
-                SyntaxKind.DotDotDot => new VarargExpressionSyntax(MatchToken(SyntaxKind.DotDotDot).Location),
-                SyntaxKind.OpenBrace => ParseTableConstructor(),
-                SyntaxKind.Function => ParseFunctionExpression(),
-                _ => null!,
-            };
+                var operatorToken = NextToken();
+                var operand = ParseExpression(unaryOperatorPrecedence);
+                left = new UnaryExpressionSyntax(operatorToken.Kind, operand, From(operatorToken, operand));
+            }
+            else
+            {
+                left = ParsePrimaryExpression();
+            }
+
+            while (true)
+            {
+                var precedence = SyntaxFacts.BinaryOperatorPrecedence(current.Kind);
+                if (precedence == 0 || precedence <= parentPrecedence)
+                    break;
+
+                var operatorToken = NextToken();
+                var right = ParseExpression(precedence);
+                left = new BinaryExpressionSyntax(left, operatorToken.Kind, right, From(left, right));
+            }
+
+            return left;
+        }
+
+        ExpressionSyntax ParsePrimaryExpression() => current.Kind switch
+        {
+            SyntaxKind.Nil => new LiteralExpressionSyntax(null, MatchToken(SyntaxKind.Nil).Location),
+            SyntaxKind.True => new LiteralExpressionSyntax(@true, MatchToken(SyntaxKind.True).Location),
+            SyntaxKind.False => new LiteralExpressionSyntax(@false, MatchToken(SyntaxKind.False).Location),
+            SyntaxKind.IntegerConstant => new LiteralExpressionSyntax((long) current.Value!, MatchToken(SyntaxKind.IntegerConstant).Location),
+            SyntaxKind.FloatConstant => new LiteralExpressionSyntax((double) current.Value!, MatchToken(SyntaxKind.FloatConstant).Location),
+            SyntaxKind.StringLiteral => new LiteralExpressionSyntax((string) current.Value!, MatchToken(SyntaxKind.StringLiteral).Location),
+            SyntaxKind.DotDotDot => new VarargExpressionSyntax(MatchToken(SyntaxKind.DotDotDot).Location),
+            SyntaxKind.OpenBrace => ParseTableConstructor(),
+            SyntaxKind.Function => ParseFunctionExpression(),
+            _ => ParsePrefixExpression()
+            //SyntaxKind.OpenParenthesis => ParsePrefixExpression(),
+        };
+
+        ExpressionSyntax ParsePrefixExpression()
+        {
+            return null;
         }
 
         ExpressionSyntax ParseNextExpression()
@@ -160,16 +216,16 @@ namespace BrickLua.Syntax
 
         FunctionExpressionSyntax ParseFunctionExpression()
         {
-            var current = this.current;
+            var function = MatchToken(SyntaxKind.Function);
             var body = ParseFunctionBody();
-            return new FunctionExpressionSyntax(body, From(current, body.Body.Body[^1]));
+            return new FunctionExpressionSyntax(body, From(function, body.Body));
         }
 
         TableConstructorExpressionSyntax ParseTableConstructor()
         {
             var statements = ImmutableArray.CreateBuilder<TableConstructorExpressionSyntax.FieldAssignmentExpressionSyntax>();
             var start = MatchToken(SyntaxKind.OpenBrace);
-            while (current.Kind != SyntaxKind.CloseBrace && current.Kind != SyntaxKind.EndOfFile)
+            while (IsNot(SyntaxKind.CloseBrace))
             {
                 SyntaxNode target;
                 ExpressionSyntax? value = null;
@@ -208,35 +264,59 @@ namespace BrickLua.Syntax
         FunctionBody ParseFunctionBody()
         {
             MatchToken(SyntaxKind.OpenParenthesis);
+
             ImmutableArray<SyntaxToken> names;
-            bool isVararg = false;
-            if (current.Kind == SyntaxKind.DotDotDot)
+            bool isVararg;
+            if (current.Kind != SyntaxKind.CloseParenthesis)
             {
-                names = ImmutableArray<SyntaxToken>.Empty;
-                isVararg = true;
+                names = ParseParameterList(out isVararg);
             }
             else
             {
-                names = ParseNameList();
-                if (current.Kind == SyntaxKind.Comma)
-                {
-                    MatchToken(SyntaxKind.DotDotDot);
-                    isVararg = true;
-                }
+                names = ImmutableArray<SyntaxToken>.Empty;
+                isVararg = false;
             }
 
-            return new FunctionBody(names, isVararg, ParseBlock());
+            MatchToken(SyntaxKind.CloseParenthesis);
+
+            var body = ParseBlock();
+            MatchToken(SyntaxKind.End);
+            return new FunctionBody(names, isVararg, body);
+        }
+
+        ImmutableArray<SyntaxToken> ParseParameterList(out bool isVarargs)
+        {
+            if (current.Kind == SyntaxKind.DotDot)
+            {
+                isVarargs = true;
+                return ImmutableArray<SyntaxToken>.Empty;
+            }
+
+            var list = ParseNameList();
+            if (current.Kind == SyntaxKind.Comma && Peek().Kind == SyntaxKind.DotDotDot)
+            {
+                NextToken();
+                NextToken();
+                isVarargs = true;
+            }
+            else
+            {
+                isVarargs = false;
+            }
+
+            return list;
         }
 
         ImmutableArray<SyntaxToken> ParseNameList()
         {
             var statements = ImmutableArray.CreateBuilder<SyntaxToken>();
             statements.Add(MatchToken(SyntaxKind.Name));
-            while (current.Kind == SyntaxKind.Comma)
+            while (current.Kind == SyntaxKind.Comma && Peek().Kind == SyntaxKind.Name)
             {
-                MatchToken(SyntaxKind.Comma);
-                statements.Add(MatchToken(SyntaxKind.Name));
+                NextToken();
+                statements.Add(NextToken());
             }
+
             return statements.ToImmutable();
         }
 
