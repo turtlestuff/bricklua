@@ -83,8 +83,10 @@ namespace BrickLua.Syntax
                 prop.GetValue(node)!.ToString()! :
                 node.GetType().Name;
 
-            if (name.EndsWith("Syntax", StringComparison.InvariantCulture))
-                name = name[..^6];
+            if (name.EndsWith("ExpressionSyntax", StringComparison.InvariantCulture))
+                name = name[..^"ExpressionSyntax".Length];
+            else if (name.EndsWith("StatementSyntax", StringComparison.InvariantCulture))
+                name = name[..^"StatementSyntax".Length];
 
 
             writer.Write(name);

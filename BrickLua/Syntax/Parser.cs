@@ -18,7 +18,10 @@
 //
 
 using System.Collections.Immutable;
+using System.Data.SqlTypes;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
+using System.Reflection.Metadata.Ecma335;
 
 namespace BrickLua.Syntax
 {
@@ -126,6 +129,12 @@ namespace BrickLua.Syntax
             _ => null,
         };
 
+        StatementSyntax? ParseNextStatement()
+        {
+            NextToken();
+            return ParseStatement();
+        }
+
         FunctionStatementSyntax ParseFunction()
         {
             var function = MatchToken(SyntaxKind.Function);
@@ -142,8 +151,8 @@ namespace BrickLua.Syntax
                 builder.Add(MatchToken(SyntaxKind.Name));
             } while (CurrentIs(SyntaxKind.Dot, out _));
 
-            var memberName = CurrentIs(SyntaxKind.Colon, out _) ? MatchToken(SyntaxKind.Name) : null;
-            return new FunctionName(builder.ToImmutable(), memberName);
+            var fieldName = CurrentIs(SyntaxKind.Colon, out _) ? MatchToken(SyntaxKind.Name) : null;
+            return new FunctionName(builder.ToImmutable(), fieldName);
         }
 
         StatementSyntax ParseLocal()
@@ -265,16 +274,63 @@ namespace BrickLua.Syntax
             _ => ParsePrefixExpression()
         };
 
+
         ExpressionSyntax ParsePrefixExpression()
         {
-            return null;
+            var builder = ImmutableArray.CreateBuilder<PrefixExpressionSyntax>();
+
+            do
+            {
+                PrefixExpressionSyntax prefix;
+
+                if (CurrentIs(SyntaxKind.OpenParenthesis, out var open))
+                {
+                    var expr = ParseExpression();
+                    var close = MatchToken(SyntaxKind.CloseParenthesis);
+                    prefix = new ParenthesizedExpressionSynax(expr, From(open, close));
+                }
+                else
+                {
+                    var name = MatchToken(SyntaxKind.Name);
+                    prefix = new NameExpressionSyntax(name, name.Location);
+                }
+
+                SyntaxToken? field = null;
+                switch (current.Kind)
+                {
+                    case SyntaxKind.Colon:
+                        NextToken();
+                        field = MatchToken(SyntaxKind.Name);
+                        goto case SyntaxKind.OpenParenthesis;
+                    case SyntaxKind.OpenParenthesis:
+                        MatchToken(SyntaxKind.OpenParenthesis);
+                        var args = current.Kind != SyntaxKind.CloseParenthesis ? ParseExpressionList() : ImmutableArray<ExpressionSyntax>.Empty;
+                        var closeParen = MatchToken(SyntaxKind.CloseParenthesis);
+                        builder.Add(new CallExpressionSyntax(prefix, field, args, From(prefix, closeParen)));
+                        continue;
+                    case SyntaxKind.OpenBracket:
+                        NextToken();
+                        var expr = ParseExpression();
+                        var closeBracket = MatchToken(SyntaxKind.CloseBracket);
+                        builder.Add(new IndexExpressionSyntax(prefix, expr, From(prefix, closeBracket)));
+                        continue;
+                    default:
+                        builder.Add(prefix);
+                        continue;
+                }
+
+            } while (CurrentIs(SyntaxKind.Dot, out _));
+
+
+            if (builder.Count == 1)
+                return builder[0];
+
+            var seq = builder.ToImmutable();
+            return new DottedExpressionSyntax(seq, From(seq[0], seq[^1]));
         }
 
-        ExpressionSyntax ParseNextExpression()
-        {
-            MatchToken(SyntaxKind.Semicolon);
-            return ParseExpression();
-        }
+
+
 
         FunctionExpressionSyntax ParseFunctionExpression()
         {

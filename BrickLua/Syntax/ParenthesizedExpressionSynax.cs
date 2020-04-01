@@ -17,31 +17,16 @@
 //  along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-using System.Collections.Immutable;
-
 namespace BrickLua.Syntax
 {
-    public sealed class FunctionStatementSyntax : StatementSyntax
+    public class ParenthesizedExpressionSynax : PrefixExpressionSyntax
     {
-        public FunctionStatementSyntax(FunctionName name, FunctionBody body, in SequenceRange location) : base(location)
+        public ParenthesizedExpressionSynax(ExpressionSyntax expression, in SequenceRange location) : base(location)
         {
-            Name = name;
-            Body = body;
+            Expression = expression;
         }
 
-        public FunctionName Name { get; }
-        public FunctionBody Body { get; }
+        public ExpressionSyntax Expression { get; }
     }
 
-    public sealed class FunctionName
-    {
-        public FunctionName(ImmutableArray<SyntaxToken> dottedNames, SyntaxToken? fieldNames)
-        {
-            DottedNames = dottedNames;
-            FieldName = fieldNames;
-        }
-
-        public ImmutableArray<SyntaxToken> DottedNames { get; }
-        public SyntaxToken? FieldName { get; }
-    }
 }

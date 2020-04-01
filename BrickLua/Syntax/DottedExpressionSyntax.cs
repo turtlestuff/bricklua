@@ -21,27 +21,14 @@ using System.Collections.Immutable;
 
 namespace BrickLua.Syntax
 {
-    public sealed class FunctionStatementSyntax : StatementSyntax
+    public class DottedExpressionSyntax : PrefixExpressionSyntax
     {
-        public FunctionStatementSyntax(FunctionName name, FunctionBody body, in SequenceRange location) : base(location)
+        public DottedExpressionSyntax(ImmutableArray<PrefixExpressionSyntax> dottedExpressions, in SequenceRange location) : base(location)
         {
-            Name = name;
-            Body = body;
+            DottedExpressions = dottedExpressions;
         }
 
-        public FunctionName Name { get; }
-        public FunctionBody Body { get; }
+        public ImmutableArray<PrefixExpressionSyntax> DottedExpressions { get; }
     }
 
-    public sealed class FunctionName
-    {
-        public FunctionName(ImmutableArray<SyntaxToken> dottedNames, SyntaxToken? fieldNames)
-        {
-            DottedNames = dottedNames;
-            FieldName = fieldNames;
-        }
-
-        public ImmutableArray<SyntaxToken> DottedNames { get; }
-        public SyntaxToken? FieldName { get; }
-    }
 }
