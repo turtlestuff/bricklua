@@ -51,21 +51,61 @@ namespace BrickLua.Syntax
                     if (typeof(SyntaxNode).IsAssignableFrom(property.PropertyType))
                     {
                         var child = (SyntaxNode) property.GetValue(source)!;
-                        if (child != null)
+                        if (child is { })
                             yield return child;
                     }
                     else if (typeof(IEnumerable<SyntaxNode>).IsAssignableFrom(property.PropertyType))
                     {
                         var children = (IEnumerable<SyntaxNode>) property.GetValue(source)!;
                         foreach (var child in children)
-                        {
-                            if (child != null)
+                            if (child is { })
                                 yield return child;
+                    }
+                    else if (typeof(FunctionBody).IsAssignableFrom(property.PropertyType))
+                    {
+                        var body = (FunctionBody) property.GetValue(source)!;
+                        foreach (var param in body.ParameterNames)
+                            if (param is { })
+                                yield return param;
+
+                        yield return body.Body;
+                    }
+                    else if (typeof(FunctionName).IsAssignableFrom(property.PropertyType))
+                    {
+                        var name = (FunctionName) property.GetValue(source)!;
+                        foreach (var dottedName in name.DottedNames)
+                            if (dottedName is { })
+                                yield return dottedName;
+
+                        if (name.FieldName is { })
+                            yield return name.FieldName;
+                    }
+                    else if (typeof(FunctionBody).IsAssignableFrom(property.PropertyType))
+                    {
+                        var body = (FunctionBody) property.GetValue(source)!;
+                        foreach (var param in body.ParameterNames)
+                        {
+                            if (param is { })
+                                yield return param;
+                        }
+
+                        yield return body.Body;
+                    }
+                    else if (typeof(IEnumerable<LocalVariableDeclaration>).IsAssignableFrom(property.PropertyType))
+                    {
+                        var decls = (IEnumerable<LocalVariableDeclaration>) property.GetValue(source)!;
+
+                        foreach (var decl in decls)
+                        {
+                            yield return decl.Name;
+
+                            if (decl.Attribute is { })
+                                yield return decl.Attribute;
                         }
                     }
+
                 }
             }
-
 
             var isToConsole = writer == Console.Out;
             var marker = isLast ? "└──" : "├──";
@@ -88,19 +128,12 @@ namespace BrickLua.Syntax
             else if (name.EndsWith("StatementSyntax", StringComparison.InvariantCulture))
                 name = name[..^"StatementSyntax".Length];
 
-
             writer.Write(name);
 
             if (node is SyntaxToken { Value: var val })
             {
                 writer.Write(" ");
                 writer.Write(val);
-            }
-
-            if (node is LiteralExpressionSyntax { Value: var literalVal })
-            {
-                writer.Write(" ");
-                writer.Write(literalVal);
             }
 
             if (isToConsole)

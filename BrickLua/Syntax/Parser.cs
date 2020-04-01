@@ -19,9 +19,11 @@
 
 using System.Collections.Immutable;
 using System.Data.SqlTypes;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection.Metadata.Ecma335;
+using System.Runtime.InteropServices.WindowsRuntime;
 
 namespace BrickLua.Syntax
 {
@@ -105,6 +107,31 @@ namespace BrickLua.Syntax
             }
         }
 
+        static bool StartsStatement(SyntaxToken token)
+        {
+            switch (token.Kind)
+            {
+                case SyntaxKind.Semicolon:
+                case SyntaxKind.Name:
+                case SyntaxKind.OpenParenthesis:
+                case SyntaxKind.DotDot:
+                case SyntaxKind.Break:
+                case SyntaxKind.Goto:
+                case SyntaxKind.Do:
+                case SyntaxKind.While:
+                case SyntaxKind.Repeat:
+                case SyntaxKind.If:
+                case SyntaxKind.For:
+                case SyntaxKind.Function:
+                case SyntaxKind.Local:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+
+
         SequenceRange From(SyntaxNode first, SyntaxNode last) => new SequenceRange(first.Location.Start, last.Location.End);
 
         public ChunkSyntax ParseFile()
@@ -113,9 +140,9 @@ namespace BrickLua.Syntax
             return new ChunkSyntax(block, block.Location);
         }
 
-        StatementSyntax? ParseStatement() => current.Kind switch
+        StatementSyntax ParseStatement() => current.Kind switch
         {
-            SyntaxKind.Semicolon => ParseStatement(),
+            SyntaxKind.Semicolon => ParseNextStatement(),
             SyntaxKind.Break => ParseBreak(),
             SyntaxKind.Goto => ParseGoto(),
             SyntaxKind.Do => ParseDo(),
@@ -126,13 +153,48 @@ namespace BrickLua.Syntax
             SyntaxKind.Function => ParseFunction(),
             SyntaxKind.Local => ParseLocal(),
             SyntaxKind.ColonColon => ParseLabel(),
-            _ => null,
+            _ => ParseAssignmentOrCall(),
         };
 
-        StatementSyntax? ParseNextStatement()
+        StatementSyntax ParseNextStatement()
         {
             NextToken();
             return ParseStatement();
+        }
+
+        StatementSyntax ParseAssignmentOrCall()
+        {
+            var expr = ParsePrefixExpression();
+
+            if (expr is CallExpressionSyntax call) return call;
+            if (expr is DottedExpressionSyntax dotted && dotted.DottedExpressions[^1] is CallExpressionSyntax) return dotted;
+
+            return ParseAssignment(expr);
+        }
+
+        AssignmentStatementSyntax ParseAssignment(PrefixExpressionSyntax first)
+        {
+            var vars = ImmutableArray.CreateBuilder<PrefixExpressionSyntax>();
+            vars.Add(first);
+
+
+            while (CurrentIs(SyntaxKind.Comma, out _))
+            {
+                var expr = ParsePrefixExpression();
+                var last = expr is DottedExpressionSyntax dotted ? dotted.DottedExpressions[^1] : expr;
+                if (expr is CallExpressionSyntax || expr is ParenthesizedExpressionSynax)
+                {
+                    // Error
+                }
+                vars.Add(expr);
+            }
+
+            var values = ParseExpressionList();
+
+            MatchToken(SyntaxKind.Equals);
+            var exprs = ParseExpressionList();
+            return new AssignmentStatementSyntax(vars.ToImmutable(), exprs, From(vars[0], exprs[^1]));
+
         }
 
         FunctionStatementSyntax ParseFunction()
@@ -199,10 +261,9 @@ namespace BrickLua.Syntax
         {
             var statements = ImmutableArray.CreateBuilder<StatementSyntax>();
 
-            StatementSyntax? statement;
-            while ((statement = ParseStatement()) != null)
+            while (StartsStatement(current))
             {
-                statements.Add(statement);
+                statements.Add(ParseStatement());
             }
 
             ReturnStatementSyntax? @return = null;
@@ -227,9 +288,6 @@ namespace BrickLua.Syntax
                         : statementArr[^1].Location.End
                     : @return.Location.End));
         }
-
-        static object @true = true;
-        static object @false = false;
 
         ExpressionSyntax ParseExpression(int parentPrecedence = 0)
         {
@@ -262,12 +320,12 @@ namespace BrickLua.Syntax
 
         ExpressionSyntax ParsePrimaryExpression() => current.Kind switch
         {
-            SyntaxKind.Nil => new LiteralExpressionSyntax(null, MatchToken(SyntaxKind.Nil).Location),
-            SyntaxKind.True => new LiteralExpressionSyntax(@true, MatchToken(SyntaxKind.True).Location),
-            SyntaxKind.False => new LiteralExpressionSyntax(@false, MatchToken(SyntaxKind.False).Location),
-            SyntaxKind.IntegerConstant => new LiteralExpressionSyntax((long) current.Value!, MatchToken(SyntaxKind.IntegerConstant).Location),
-            SyntaxKind.FloatConstant => new LiteralExpressionSyntax((double) current.Value!, MatchToken(SyntaxKind.FloatConstant).Location),
-            SyntaxKind.StringLiteral => new LiteralExpressionSyntax((string) current.Value!, MatchToken(SyntaxKind.StringLiteral).Location),
+            SyntaxKind.Nil => new LiteralExpressionSyntax(current, MatchToken(SyntaxKind.Nil).Location),
+            SyntaxKind.True => new LiteralExpressionSyntax(current, MatchToken(SyntaxKind.True).Location),
+            SyntaxKind.False => new LiteralExpressionSyntax(current, MatchToken(SyntaxKind.False).Location),
+            SyntaxKind.IntegerConstant => new LiteralExpressionSyntax(current, MatchToken(SyntaxKind.IntegerConstant).Location),
+            SyntaxKind.FloatConstant => new LiteralExpressionSyntax(current, MatchToken(SyntaxKind.FloatConstant).Location),
+            SyntaxKind.StringLiteral => new LiteralExpressionSyntax(current, MatchToken(SyntaxKind.StringLiteral).Location),
             SyntaxKind.DotDotDot => new VarargExpressionSyntax(MatchToken(SyntaxKind.DotDotDot).Location),
             SyntaxKind.OpenBrace => ParseTableConstructor(),
             SyntaxKind.Function => ParseFunctionExpression(),
@@ -275,7 +333,7 @@ namespace BrickLua.Syntax
         };
 
 
-        ExpressionSyntax ParsePrefixExpression()
+        PrefixExpressionSyntax ParsePrefixExpression()
         {
             var builder = ImmutableArray.CreateBuilder<PrefixExpressionSyntax>();
 
@@ -295,25 +353,34 @@ namespace BrickLua.Syntax
                     prefix = new NameExpressionSyntax(name, name.Location);
                 }
 
-                SyntaxToken? field = null;
                 switch (current.Kind)
                 {
                     case SyntaxKind.Colon:
-                        NextToken();
-                        field = MatchToken(SyntaxKind.Name);
-                        goto case SyntaxKind.OpenParenthesis;
+                        {
+                            NextToken();
+                            var field = MatchToken(SyntaxKind.Name);
+                            MatchToken(SyntaxKind.OpenParenthesis);
+                            var args = current.Kind != SyntaxKind.CloseParenthesis ? ParseExpressionList() : ImmutableArray<ExpressionSyntax>.Empty;
+                            var closeParen = MatchToken(SyntaxKind.CloseParenthesis);
+                            builder.Add(new CallExpressionSyntax(prefix, field, args, From(prefix, closeParen)));
+                            continue;
+                        }
                     case SyntaxKind.OpenParenthesis:
-                        MatchToken(SyntaxKind.OpenParenthesis);
-                        var args = current.Kind != SyntaxKind.CloseParenthesis ? ParseExpressionList() : ImmutableArray<ExpressionSyntax>.Empty;
-                        var closeParen = MatchToken(SyntaxKind.CloseParenthesis);
-                        builder.Add(new CallExpressionSyntax(prefix, field, args, From(prefix, closeParen)));
-                        continue;
+                        {
+                            NextToken();
+                            var args = current.Kind != SyntaxKind.CloseParenthesis ? ParseExpressionList() : ImmutableArray<ExpressionSyntax>.Empty;
+                            var closeParen = MatchToken(SyntaxKind.CloseParenthesis);
+                            builder.Add(new CallExpressionSyntax(prefix, null, args, From(prefix, closeParen)));
+                            continue;
+                        }
                     case SyntaxKind.OpenBracket:
-                        NextToken();
-                        var expr = ParseExpression();
-                        var closeBracket = MatchToken(SyntaxKind.CloseBracket);
-                        builder.Add(new IndexExpressionSyntax(prefix, expr, From(prefix, closeBracket)));
-                        continue;
+                        {
+                            NextToken();
+                            var expr = ParseExpression();
+                            var closeBracket = MatchToken(SyntaxKind.CloseBracket);
+                            builder.Add(new IndexExpressionSyntax(prefix, expr, From(prefix, closeBracket)));
+                            continue;
+                        }
                     default:
                         builder.Add(prefix);
                         continue;
@@ -328,9 +395,6 @@ namespace BrickLua.Syntax
             var seq = builder.ToImmutable();
             return new DottedExpressionSyntax(seq, From(seq[0], seq[^1]));
         }
-
-
-
 
         FunctionExpressionSyntax ParseFunctionExpression()
         {
@@ -398,7 +462,7 @@ namespace BrickLua.Syntax
             MatchToken(SyntaxKind.CloseParenthesis);
 
             var body = ParseBlock();
-            MatchToken(SyntaxKind.OpenParenthesis);
+            MatchToken(SyntaxKind.End);
             return new FunctionBody(names, isVararg, body);
         }
 

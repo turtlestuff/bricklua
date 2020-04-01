@@ -17,15 +17,19 @@
 //  along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.
 //
 
+using System.Collections.Immutable;
+
 namespace BrickLua.Syntax
 {
-    public sealed class LiteralExpressionSyntax : ExpressionSyntax
+    public class AssignmentStatementSyntax : StatementSyntax
     {
-        public LiteralExpressionSyntax(SyntaxToken value, in SequenceRange location) : base(location)
+        public AssignmentStatementSyntax(ImmutableArray<PrefixExpressionSyntax> variables, ImmutableArray<ExpressionSyntax> values, in SequenceRange location) : base(location)
         {
-            Value = value;
+            Variables = variables;
+            Values = values;
         }
 
-        public SyntaxToken Value { get; }
+        public ImmutableArray<PrefixExpressionSyntax> Variables { get; }
+        public ImmutableArray<ExpressionSyntax> Values { get; }
     }
 }
