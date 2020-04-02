@@ -21,6 +21,8 @@ using System;
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Resources;
+using System.Text;
 
 namespace BrickLua.Syntax
 {
@@ -28,12 +30,12 @@ namespace BrickLua.Syntax
     public ref struct Lexer
     {
         bool stop;
-        public SequenceReader<char> Reader;
+        SequenceReader<char> reader;
         SequencePosition start;
 
         public Lexer(in SequenceReader<char> reader)
         {
-            Reader = reader;
+            this.reader = reader;
             start = default;
             stop = false;
         }
@@ -41,12 +43,12 @@ namespace BrickLua.Syntax
         public SyntaxToken Lex()
         {
             @continue:
-            if (stop || !Reader.TryPeek(out var ch))
+            if (stop || !reader.TryPeek(out var ch))
             {
                 return new SyntaxToken(SyntaxKind.EndOfFile, default);
             }
 
-            start = Reader.Position;
+            start = reader.Position;
 
             switch (ch)
             {
@@ -56,7 +58,7 @@ namespace BrickLua.Syntax
                 case '\f':
                 case '\t':
                 case '\v':
-                    Reader.Advance(1);
+                    reader.Advance(1);
                     goto @continue;
 
                 case '+': return LexSingleOperator(SyntaxKind.Plus);
@@ -81,16 +83,16 @@ namespace BrickLua.Syntax
                 case ',': return LexSingleOperator(SyntaxKind.Comma);
 
                 case '"':
-                    Reader.Advance(1);
-                    if (!Reader.TryReadTo(sequence: out var seq, '"'))
+                    reader.Advance(1);
+                    if (!reader.TryReadTo(sequence: out var seq, '"'))
                     {
                         stop = true;
                     }
 
-                    return new SyntaxToken(SyntaxKind.StringLiteral, seq.ToString(), new SequenceRange(start, Reader.Position));
+                    return new SyntaxToken(SyntaxKind.StringLiteral, ParseString(seq, false), new SequenceRange(start, reader.Position));
 
                 case '[':
-                    Reader.Advance(1);
+                    reader.Advance(1);
                     var level = 0;
                     while (NextIs('='))
                     {
@@ -108,21 +110,24 @@ namespace BrickLua.Syntax
                     endLongLiteral[0] = ']';
                     endLongLiteral[^1] = ']';
 
-                    var startString = Reader.Position;
+                    var startString = reader.Position;
 
-                    if (!Reader.TryReadTo(sequence: out var literal, endLongLiteral))
+                    if (!reader.TryReadTo(sequence: out var literal, endLongLiteral))
                     {
                         stop = true;
-                        return new SyntaxToken(SyntaxKind.StringLiteral, Reader.Sequence.Slice(startString), new SequenceRange(start, Reader.Sequence.End));
+                        return new SyntaxToken(SyntaxKind.StringLiteral, ParseString(reader.Sequence.Slice(startString), true), new SequenceRange(start, reader.Sequence.End));
                     }
+                    var read = new SequenceReader<char>(literal);
 
-                    return new SyntaxToken(SyntaxKind.StringLiteral, literal.ToString(), new SequenceRange(start, Reader.Position));
+                    var str = literal.ToArray();
+
+                    return new SyntaxToken(SyntaxKind.StringLiteral, ParseString(literal, true), new SequenceRange(start, reader.Position));
 
                 case '-':
-                    if (Reader.TryPeek(out var next) && next >= '0' && next <= '9')
+                    if (reader.TryPeek(out var next) && next >= '0' && next <= '9')
                         return LexNumeral();
 
-                    Reader.Advance(1);
+                    reader.Advance(1);
 
                     if (NextIs('-'))
                     {
@@ -142,14 +147,14 @@ namespace BrickLua.Syntax
                                 delim[0] = ']';
                                 delim[^1] = ']';
 
-                                if (!Reader.TryReadTo(sequence: out _, delim))
+                                if (!reader.TryReadTo(sequence: out _, delim))
                                 {
                                     stop = true;
                                 }
                             }
                         }
 
-                        if (!Reader.TryAdvanceTo('\n'))
+                        if (!reader.TryAdvanceTo('\n'))
                             stop = true;
 
                         goto @continue;
@@ -158,7 +163,7 @@ namespace BrickLua.Syntax
                     return NewToken(SyntaxKind.Minus);
 
                 case '.':
-                    Reader.Advance(1);
+                    reader.Advance(1);
 
                     if (NextIs('.'))
                         if (NextIs('.'))
@@ -177,16 +182,16 @@ namespace BrickLua.Syntax
                     return LexIdentifier();
 
                 default:
-                    Reader.Advance(1);
+                    reader.Advance(1);
                     return NewToken(SyntaxKind.BadToken); // TODO: Diagnostics
             }
         }
 
         SyntaxToken LexIdentifier()
         {
-            Reader.Advance(1);
-            Reader.AdvancePastAny("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_");
-            var str = Reader.Sequence.Slice(start, Reader.Position);
+            reader.Advance(1);
+            reader.AdvancePastAny("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_");
+            var str = reader.Sequence.Slice(start, reader.Position);
 
             SyntaxKind type = SyntaxKind.Name;
             if (str.Length <= 8)
@@ -196,7 +201,7 @@ namespace BrickLua.Syntax
                 type = SyntaxFacts.GetIdentifierKind(span);
             }
 
-            return new SyntaxToken(type, str.ToString(), new SequenceRange(start, Reader.Position));
+            return new SyntaxToken(type, str.ToArray().AsMemory(), new SequenceRange(start, reader.Position));
         }
 
         SyntaxToken LexNumeral()
@@ -216,20 +221,20 @@ namespace BrickLua.Syntax
             bool negative = NextIs('-');
             if (NextIs('0') && NextIs('X', 'x'))
             {
-                var start = Reader.Position;
-                Reader.AdvancePastAny("1234567890ABCDEFabcdef");
-                var str = Reader.Sequence.Slice(start, Reader.Position);
+                var start = reader.Position;
+                reader.AdvancePastAny("1234567890ABCDEFabcdef");
+                var str = reader.Sequence.Slice(start, reader.Position);
 
                 var num = long.Parse(str.IsSingleSegment ? str.FirstSpan : str.ToArray(), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
 
                 if (negative) num = -num;
-                token = new SyntaxToken(num, new SequenceRange(this.start, Reader.Position));
+                token = new SyntaxToken(num, new SequenceRange(this.start, reader.Position));
                 return true;
             }
             else
             {
-                Reader.AdvancePastAny("1234567890ABCDEFabcdef");
-                var str = Reader.Sequence.Slice(start, Reader.Position);
+                reader.AdvancePastAny("1234567890ABCDEFabcdef");
+                var str = reader.Sequence.Slice(start, reader.Position);
                 long num = 0;
 
                 foreach (var memory in str)
@@ -247,20 +252,20 @@ namespace BrickLua.Syntax
                 }
 
                 if (negative) num = -num;
-                token = new SyntaxToken(num, new SequenceRange(start, Reader.Position));
+                token = new SyntaxToken(num, new SequenceRange(start, reader.Position));
                 return true;
             }
         }
 
         SyntaxToken LexSingleOperator(SyntaxKind type)
         {
-            Reader.Advance(1);
+            reader.Advance(1);
             return NewToken(type);
         }
 
         SyntaxToken LexDoubleOperator(char next, SyntaxKind one, SyntaxKind two)
         {
-            Reader.Advance(1);
+            reader.Advance(1);
             SyntaxKind type = one;
             if (NextIs(next))
             {
@@ -272,7 +277,7 @@ namespace BrickLua.Syntax
 
         SyntaxToken LexDoubleChoiceOperator(char char1, char char2, SyntaxKind none, SyntaxKind type1, SyntaxKind type2)
         {
-            Reader.Advance(1);
+            reader.Advance(1);
             SyntaxKind type = none;
             if (NextIs(char1))
             {
@@ -286,11 +291,153 @@ namespace BrickLua.Syntax
             return NewToken(type);
         }
 
+        ReadOnlyMemory<char> ParseString(in ReadOnlySequence<char> str, bool multiLine)
+        {
+            var buffer = new ArrayBufferWriter<char>(checked((int) str.Length));
+
+            var reader = new SequenceReader<char>(str);
+
+            if (multiLine)
+            {
+                for (int i = 0; i < 2; i++)
+                {
+                    if (reader.TryPeek(out var start) && (start is '\r' || start is 'n'))
+                        reader.Advance(1);
+                    else
+                        break;
+                }
+
+                while (reader.TryReadToAny(sequence: out var sequence, "\r\n"))
+                {
+                    foreach (var memory in sequence)
+                    {
+                        buffer.Write(memory.Span);
+                    }
+
+                    buffer.Write(stackalloc char[] { '\n' });
+
+                    if (reader.TryPeek(out var next) && (next is '\r' || next is 'n'))
+                    {
+                        reader.Advance(1);
+                    }
+                }
+
+                foreach (var memory in reader.Sequence.Slice(reader.Position))
+                {
+                    buffer.Write(memory.Span);
+                }
+            }
+            else
+            {
+                while (reader.TryReadTo(sequence: out var sequence, '\\'))
+                {
+                    foreach (var memory in sequence)
+                    {
+                        buffer.Write(memory.Span);
+                    }
+
+                    if (!reader.TryRead(out var c))
+                    {
+                        break;
+                    }
+
+                    switch (c)
+                    {
+                        case 'a':
+                            buffer.Write(stackalloc char[] { '\a' });
+                            break;
+                        case 'b':
+                            buffer.Write(stackalloc char[] { '\b' });
+                            break;
+                        case 'f':
+                            buffer.Write(stackalloc char[] { '\f' });
+                            break;
+                        case 'n':
+                            buffer.Write(stackalloc char[] { '\n' });
+                            break;
+                        case 'r':
+                            buffer.Write(stackalloc char[] { '\r' });
+                            break;
+                        case 't':
+                            buffer.Write(stackalloc char[] { '\t' });
+                            break;
+                        case 'v':
+                            buffer.Write(stackalloc char[] { '\v' });
+                            break;
+                        case '\\':
+                            buffer.Write(stackalloc char[] { '\\' });
+                            break;
+                        case '"':
+                            buffer.Write(stackalloc char[] { '"' });
+                            break;
+                        case '\'':
+                            buffer.Write(stackalloc char[] { '\'' });
+                            break;
+                        case 'x':
+                            if (!reader.TryRead(out var ch1) & !reader.TryRead(out var ch2))
+                            {
+                                break;
+                            }
+
+                            var num = byte.Parse(stackalloc char[] { ch1, ch2 }, NumberStyles.AllowHexSpecifier);
+                            buffer.Write(stackalloc char[] { (char) num });
+                            break;
+                        case 'u':
+                            if (!reader.TryRead(out var openBrace) || openBrace != '{')
+                            {
+                                break;
+                            }
+
+                            if (!reader.TryReadTo(span: out var span, '}'))
+                            {
+                                break;
+                            }
+
+                            var value = int.Parse(span, NumberStyles.AllowHexSpecifier);
+
+                            Span<char> chars = stackalloc char[2];
+                            new Rune(value).EncodeToUtf16(chars);
+                            buffer.Write(chars);
+                            break;
+
+                        case var d when c >= '0' && c <= '9':
+                            Span<char> escape = stackalloc char[3];
+                            escape[0] = d;
+                            if (reader.TryRead(out var d2) && d2 >= '0' && c <= '9')
+                            {
+                                escape[1] = d2;
+                                if (reader.TryRead(out var d3) && d2 >= '0' && c <= '9')
+                                    escape[2] = d3;
+                                else
+                                    escape = escape[..2];
+                            }
+                            else
+                            {
+                                escape = escape[..1];
+                            }
+
+                            var shortNum = short.Parse(escape);
+                            buffer.Write(stackalloc char[] { (char) shortNum });
+                            break;
+                        default:
+                            break;
+                    }
+                }
+
+                foreach (var memory in reader.Sequence.Slice(reader.Position))
+                {
+                    buffer.Write(memory.Span);
+                }
+            }
+
+            return buffer.WrittenMemory;
+        }
+
         bool NextIs(char c)
         {
-            if (Reader.TryPeek(out var next) && next == c)
+            if (reader.TryPeek(out var next) && next == c)
             {
-                Reader.Advance(1);
+                reader.Advance(1);
                 return true;
             }
 
@@ -299,9 +446,9 @@ namespace BrickLua.Syntax
 
         bool NextIs(char a, char b)
         {
-            if (Reader.TryPeek(out var next) && (next == a || next == b))
+            if (reader.TryPeek(out var next) && (next == a || next == b))
             {
-                Reader.Advance(1);
+                reader.Advance(1);
                 return true;
             }
 
@@ -309,6 +456,6 @@ namespace BrickLua.Syntax
         }
 
 
-        SyntaxToken NewToken(SyntaxKind type) => new SyntaxToken(type, new SequenceRange(start, Reader.Position));
+        SyntaxToken NewToken(SyntaxKind type) => new SyntaxToken(type, new SequenceRange(start, reader.Position));
     }
 }
