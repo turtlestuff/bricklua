@@ -17,33 +17,22 @@
 //  along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-using System;
 using System.Buffers;
 using BrickLua.Syntax;
 
-namespace BrickLua.Console
+namespace BrickLua
 {
-    using Console = System.Console;
-
-    class Program
+    public sealed class Diagnostic
     {
-        static void Main(string[] args)
+        public Diagnostic(in SequenceRange location, string message)
         {
-            while (true)
-            {
-                var seq = new ReadOnlySequence<char>(Console.ReadLine().AsMemory());
-                var parser = new Parser(new Lexer(new SequenceReader<char>(seq)));
-                parser.ParseFile().WriteTo(Console.Out);
-
-                foreach (var diag in parser.Diagnostics)
-                {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine($"{diag.Message}");
-                    Console.ResetColor();
-
-                    Console.WriteLine($"  {parser.Diagnostics.Text.Slice(diag.Location.Start, diag.Location.End)}");
-                }
-            }
+            Location = location;
+            Message = message;
         }
+
+        public SequenceRange Location { get; }
+        public string Message { get; }
+
+        public override string ToString() => Message;
     }
 }

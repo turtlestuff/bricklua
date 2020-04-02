@@ -18,6 +18,7 @@
 //
 
 using System;
+using System.Globalization;
 
 namespace BrickLua.Syntax
 {
@@ -94,6 +95,7 @@ namespace BrickLua.Syntax
             }
         }
 
+        public static string GetEofString(this char c) => c == default ? "<eof>" : c.ToString(CultureInfo.InvariantCulture);
 
         // TODO: Replace with https://github.com/dotnet/csharplang/issues/1881
 

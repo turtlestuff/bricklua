@@ -29,11 +29,14 @@ namespace BrickLua.Syntax
 
         Lexer lexer;
 
+        public DiagnosticBag Diagnostics { get; }
+
         public Parser(in Lexer lexer)
         {
             this.lexer = lexer;
             current = this.lexer.Lex();
             peek = null;
+            Diagnostics = lexer.Diagnostics;
         }
 
         SyntaxToken NextToken()
@@ -58,7 +61,7 @@ namespace BrickLua.Syntax
             if (current.Kind == kind)
                 return NextToken();
 
-            // TODO: Diagnostics
+            Diagnostics.ReportUnexpectedToken(current.Location, kind, current.Kind);
             return new SyntaxToken(kind, default);
         }
 
@@ -179,7 +182,7 @@ namespace BrickLua.Syntax
                 var last = expr is DottedExpressionSyntax dotted ? dotted.DottedExpressions[^1] : expr;
                 if (expr is CallExpressionSyntax || expr is ParenthesizedExpressionSynax)
                 {
-                    // Error
+                    Diagnostics.ReportIncorrectAssignmentLocation(expr.Location);
                 }
 
                 vars.Add(expr);
@@ -578,7 +581,6 @@ namespace BrickLua.Syntax
                     default:
                         goto exit;
                 }
-
             }
 
             exit:
@@ -610,6 +612,7 @@ namespace BrickLua.Syntax
                     return new NumericalForStatementSyntax(name, initial, limit, step, body, From(@for, end));
                 case SyntaxKind.Comma:
                 case SyntaxKind.In:
+                default:
                     var list = ParseNameList();
                     MatchToken(SyntaxKind.In);
                     var exprs = ParseExpressionList();
@@ -618,9 +621,6 @@ namespace BrickLua.Syntax
                     var inEnd = MatchToken(SyntaxKind.End);
 
                     return new ForStatementSyntax(list, exprs, inBody, From(@for, inEnd));
-                default:
-                    System.Console.WriteLine("Null ref 3");
-                    return default!;
             }
         }
 
