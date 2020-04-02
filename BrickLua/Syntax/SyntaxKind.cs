@@ -22,6 +22,7 @@ namespace BrickLua.Syntax
     public enum SyntaxKind : byte
     {
         EndOfFile,
+        BadToken,
 
         Name,
         StringLiteral,

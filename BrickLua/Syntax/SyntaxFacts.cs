@@ -23,6 +23,8 @@ namespace BrickLua.Syntax
 {
     public static class SyntaxFacts
     {
+        public static bool IsRightAssociative(SyntaxKind kind) => kind == SyntaxKind.Caret || kind == SyntaxKind.DotDot;
+
         public static int UnaryOperatorPrecedence(SyntaxKind kind)
         {
             switch (kind)
@@ -44,6 +46,9 @@ namespace BrickLua.Syntax
         {
             switch (kind)
             {
+                case SyntaxKind.Caret:
+                    return 11;
+
                 case SyntaxKind.Asterisk:
                 case SyntaxKind.Slash:
                 case SyntaxKind.SlashSlash:

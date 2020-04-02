@@ -27,6 +27,7 @@ namespace BrickLua.Syntax
     [SuppressMessage("Performance", "CA1815:Override equals and operator equals on value types", Justification = "Not an expected scenario")]
     public ref struct Lexer
     {
+        bool stop;
         public SequenceReader<char> Reader;
         SequencePosition start;
 
@@ -34,12 +35,13 @@ namespace BrickLua.Syntax
         {
             Reader = reader;
             start = default;
+            stop = false;
         }
 
         public SyntaxToken Lex()
         {
             @continue:
-            if (!Reader.TryPeek(out var ch))
+            if (stop || !Reader.TryPeek(out var ch))
             {
                 return new SyntaxToken(SyntaxKind.EndOfFile, default);
             }
@@ -73,11 +75,48 @@ namespace BrickLua.Syntax
                 case ')': return LexSingleOperator(SyntaxKind.CloseParenthesis);
                 case '{': return LexSingleOperator(SyntaxKind.OpenBrace);
                 case '}': return LexSingleOperator(SyntaxKind.CloseBrace);
-                case '[': return LexSingleOperator(SyntaxKind.OpenBracket);
                 case ']': return LexSingleOperator(SyntaxKind.CloseBracket);
                 case ':': return LexDoubleOperator(':', SyntaxKind.Colon, SyntaxKind.ColonColon);
                 case ';': return LexSingleOperator(SyntaxKind.Semicolon);
                 case ',': return LexSingleOperator(SyntaxKind.Comma);
+
+                case '"':
+                    Reader.Advance(1);
+                    if (!Reader.TryReadTo(sequence: out var seq, '"'))
+                    {
+                        stop = true;
+                    }
+
+                    return new SyntaxToken(SyntaxKind.StringLiteral, seq.ToString(), new SequenceRange(start, Reader.Position));
+
+                case '[':
+                    Reader.Advance(1);
+                    var level = 0;
+                    while (NextIs('='))
+                    {
+                        level++;
+                    }
+
+                    if (!NextIs('[') && level == 0)
+                    {
+                        return NewToken(SyntaxKind.OpenBracket);
+                    }
+
+                    Span<char> endLongLiteral = new char[level + 2];
+
+                    endLongLiteral.Fill('=');
+                    endLongLiteral[0] = ']';
+                    endLongLiteral[^1] = ']';
+
+                    var startString = Reader.Position;
+
+                    if (!Reader.TryReadTo(sequence: out var literal, endLongLiteral))
+                    {
+                        stop = true;
+                        return new SyntaxToken(SyntaxKind.StringLiteral, Reader.Sequence.Slice(startString), new SequenceRange(start, Reader.Sequence.End));
+                    }
+
+                    return new SyntaxToken(SyntaxKind.StringLiteral, literal.ToString(), new SequenceRange(start, Reader.Position));
 
                 case '-':
                     if (Reader.TryPeek(out var next) && next >= '0' && next <= '9')
@@ -87,8 +126,32 @@ namespace BrickLua.Syntax
 
                     if (NextIs('-'))
                     {
-                        // TODO: Long comments
-                        Reader.TryAdvanceTo('\n');
+                        if (NextIs('['))
+                        {
+                            var numEquals = 0;
+                            while (NextIs('='))
+                            {
+                                numEquals++;
+                            }
+
+                            if (NextIs('['))
+                            {
+                                Span<char> delim = new char[numEquals + 2];
+
+                                delim.Fill('=');
+                                delim[0] = ']';
+                                delim[^1] = ']';
+
+                                if (!Reader.TryReadTo(sequence: out _, delim))
+                                {
+                                    stop = true;
+                                }
+                            }
+                        }
+
+                        if (!Reader.TryAdvanceTo('\n'))
+                            stop = true;
+
                         goto @continue;
                     }
 
@@ -114,7 +177,8 @@ namespace BrickLua.Syntax
                     return LexIdentifier();
 
                 default:
-                    return default; // TODO: Diagnostics
+                    Reader.Advance(1);
+                    return NewToken(SyntaxKind.BadToken); // TODO: Diagnostics
             }
         }
 
@@ -144,7 +208,7 @@ namespace BrickLua.Syntax
                 return token;
             }
 
-            return default;
+            throw new NotImplementedException("This type of literal is not supported");
         }
 
         bool LexInteger(out SyntaxToken token)

@@ -18,12 +18,7 @@
 //
 
 using System.Collections.Immutable;
-using System.Data.SqlTypes;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq.Expressions;
-using System.Reflection.Metadata.Ecma335;
-using System.Runtime.InteropServices.WindowsRuntime;
 
 namespace BrickLua.Syntax
 {
@@ -130,9 +125,9 @@ namespace BrickLua.Syntax
             }
         }
 
-
-
         SequenceRange From(SyntaxNode first, SyntaxNode last) => new SequenceRange(first.Location.Start, last.Location.End);
+
+        SyntaxNode GetLast<TNode>(ImmutableArray<TNode> node, SyntaxNode last) where TNode : SyntaxNode => node.IsDefaultOrEmpty ? last : node[^1];
 
         public ChunkSyntax ParseFile()
         {
@@ -186,6 +181,7 @@ namespace BrickLua.Syntax
                 {
                     // Error
                 }
+
                 vars.Add(expr);
             }
 
@@ -277,19 +273,11 @@ namespace BrickLua.Syntax
 
             var statementArr = statements.ToImmutable();
             return new BlockStatementSyntax(statementArr, @return, new SequenceRange(
-                statementArr.IsDefaultOrEmpty
-                    ? @return is null
-                        ? default
-                        : @return.Location.Start
-                    : statementArr[0].Location.Start,
-                @return is null
-                    ? statementArr.IsDefaultOrEmpty
-                        ? default
-                        : statementArr[^1].Location.End
-                    : @return.Location.End));
+                statementArr.IsDefaultOrEmpty ? @return?.Location.Start ?? default : statementArr[0].Location.Start,
+                @return?.Location.End ?? (statementArr.IsDefaultOrEmpty ? default : statementArr[^1].Location.End)));
         }
 
-        ExpressionSyntax ParseExpression(int parentPrecedence = 0)
+        ExpressionSyntax ParseExpression(int parentPrecedence = 0, bool? rightAssociative = null)
         {
             ExpressionSyntax left;
             var unaryOperatorPrecedence = SyntaxFacts.UnaryOperatorPrecedence(current.Kind);
@@ -307,11 +295,13 @@ namespace BrickLua.Syntax
             while (true)
             {
                 var precedence = SyntaxFacts.BinaryOperatorPrecedence(current.Kind);
-                if (precedence == 0 || precedence <= parentPrecedence)
+                if (precedence == 0 || (rightAssociative == true ? precedence < parentPrecedence : precedence <= parentPrecedence))
                     break;
 
                 var operatorToken = NextToken();
-                var right = ParseExpression(precedence);
+
+                var right = ParseExpression(precedence, SyntaxFacts.IsRightAssociative(operatorToken.Kind));
+
                 left = new BinaryExpressionSyntax(left, operatorToken.Kind, right, From(left, right));
             }
 
@@ -629,12 +619,10 @@ namespace BrickLua.Syntax
 
                     return new ForStatementSyntax(list, exprs, inBody, From(@for, inEnd));
                 default:
+                    System.Console.WriteLine("Null ref 3");
                     return default!;
             }
         }
-
-
-        SyntaxNode GetLast<TNode>(ImmutableArray<TNode> node, SyntaxNode last) where TNode : SyntaxNode => node.IsDefaultOrEmpty ? last : node[^1];
 
         LabelStatementSyntax ParseLabel()
         {
