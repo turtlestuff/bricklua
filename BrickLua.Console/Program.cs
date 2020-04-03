@@ -19,6 +19,7 @@
 
 using System;
 using System.Buffers;
+using System.ComponentModel.DataAnnotations;
 using BrickLua.Syntax;
 
 namespace BrickLua.Console
@@ -37,11 +38,36 @@ namespace BrickLua.Console
 
                 foreach (var diag in parser.Diagnostics)
                 {
+
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine($"{diag.Message}");
+                    Console.Write($"{diag.Message} ");
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
+                    Console.WriteLine(parser.Diagnostics.Text.Slice(diag.Location.Start, diag.Location.End).ToString());
                     Console.ResetColor();
 
-                    Console.WriteLine($"  {parser.Diagnostics.Text.Slice(diag.Location.Start, diag.Location.End)}");
+                    var text = parser.Diagnostics.Text;
+                    var location = diag.Location;
+                    var index = text.Slice(0, diag.Location.Start).Length;
+                    var reader = new SequenceReader<char>(parser.Diagnostics.Text);
+
+                    ReadOnlySequence<char> line = reader.Sequence;
+                    SequencePosition startPos = text.Start;
+                    while (reader.TryReadTo(sequence: out var sequence, '\n'))
+                    {
+                        if (reader.Consumed - 1 > index)
+                        {
+                            line = sequence;
+                            break;
+                        }
+
+                        startPos = reader.Position;
+                    }
+
+                    Console.WriteLine(line.ToString());
+
+                    var underlineLength = text.Slice(location.Start, location.End).Length;
+                    var padLength = text.Slice(startPos, location.Start).Length + underlineLength;
+                    Console.WriteLine($"{new string('~', (int) underlineLength).PadLeft((int) padLength)}");
                 }
             }
         }

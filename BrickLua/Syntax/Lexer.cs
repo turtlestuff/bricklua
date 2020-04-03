@@ -91,6 +91,7 @@ namespace BrickLua.Syntax
                     if (!reader.TryReadTo(sequence: out var seq, '"'))
                     {
                         stop = true;
+                        seq = reader.Sequence.Slice(reader.Position);
                         Diagnostics.ReportUnterminatedString(new SequenceRange(start, reader.Sequence.End));
                     }
 

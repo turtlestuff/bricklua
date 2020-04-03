@@ -17,7 +17,9 @@
 //  along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.
 //
 
+using System;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace BrickLua.Syntax
@@ -62,6 +64,7 @@ namespace BrickLua.Syntax
                 return NextToken();
 
             Diagnostics.ReportUnexpectedToken(current.Location, kind, current.Kind);
+            Console.WriteLine(new StackTrace(1).GetFrame(0)?.GetMethod()?.Name);
             return new SyntaxToken(kind, default);
         }
 
@@ -105,23 +108,15 @@ namespace BrickLua.Syntax
             }
         }
 
-        static bool StartsStatement(SyntaxToken token)
+        static bool EndsBlock(SyntaxToken token)
         {
             switch (token.Kind)
             {
-                case SyntaxKind.Semicolon:
-                case SyntaxKind.Name:
-                case SyntaxKind.OpenParenthesis:
-                case SyntaxKind.DotDot:
-                case SyntaxKind.Break:
-                case SyntaxKind.Goto:
-                case SyntaxKind.Do:
-                case SyntaxKind.While:
-                case SyntaxKind.Repeat:
-                case SyntaxKind.If:
-                case SyntaxKind.For:
-                case SyntaxKind.Function:
-                case SyntaxKind.Local:
+                case SyntaxKind.EndOfFile:
+                case SyntaxKind.End:
+                case SyntaxKind.Until:
+                case SyntaxKind.ElseIf:
+                case SyntaxKind.Else:
                     return true;
                 default:
                     return false;
@@ -180,15 +175,9 @@ namespace BrickLua.Syntax
             {
                 var expr = ParsePrefixExpression();
                 var last = expr is DottedExpressionSyntax dotted ? dotted.DottedExpressions[^1] : expr;
-                if (expr is CallExpressionSyntax || expr is ParenthesizedExpressionSynax)
-                {
-                    Diagnostics.ReportIncorrectAssignmentLocation(expr.Location);
-                }
 
                 vars.Add(expr);
             }
-
-            var values = ParseExpressionList();
 
             MatchToken(SyntaxKind.Equals);
             var exprs = ParseExpressionList();
@@ -260,7 +249,7 @@ namespace BrickLua.Syntax
         {
             var statements = ImmutableArray.CreateBuilder<StatementSyntax>();
 
-            while (StartsStatement(current))
+            while (!EndsBlock(current))
             {
                 statements.Add(ParseStatement());
             }

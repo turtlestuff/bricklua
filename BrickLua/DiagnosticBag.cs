@@ -68,7 +68,5 @@ namespace BrickLua
         internal void ReportExpectedCharacter(in SequenceRange location, char actual, char expected) => Report(location, $"Unexpected character '{actual.GetEofString()}', expected '{actual.GetEofString()}'.");
 
         internal void ReportUnexpectedToken(in SequenceRange location, SyntaxKind expected, SyntaxKind actual) => Report(location, $"Unexpected token <{actual}>, expected <{expected}>.");
-
-        internal void ReportIncorrectAssignmentLocation(in SequenceRange location) => Report(location, $"Cannot assign to expression of this type.");
     }
 }
