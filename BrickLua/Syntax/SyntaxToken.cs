@@ -1,7 +1,7 @@
 ﻿//  
 //  Copyright (C) 2020 John Tur
 //  
-//  This file is part of BrickLua, a high-performance Lua 5.4 implementation in C#.
+//  This file is part of BrickLua, a simple Lua 5.4 CIL compiler.
 //  
 //  BrickLua is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Lesser General Public License as published by
@@ -17,16 +17,15 @@
 //  along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-using System.Runtime.CompilerServices;
-
 namespace BrickLua.Syntax
 {
     public class SyntaxToken : SyntaxNode
     {
-        public SyntaxToken(SyntaxKind kind, in SequenceRange location) : base(location)
+        public SyntaxToken(SyntaxKind kind, in SequenceRange location, bool missing = false) : base(location)
         {
             Kind = kind;
             Value = default;
+            IsMissing = missing;
         }
 
         public SyntaxToken(SyntaxKind kind, object value, in SequenceRange location) : base(location)
@@ -47,5 +46,10 @@ namespace BrickLua.Syntax
 
         public object? Value { get; }
         public SyntaxKind Kind { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether the token was synthesized.
+        /// </summary>
+        public bool IsMissing { get; }
     }
 }

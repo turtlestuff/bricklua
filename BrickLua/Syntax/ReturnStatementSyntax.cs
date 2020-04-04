@@ -1,7 +1,7 @@
 ﻿//  
 //  Copyright (C) 2020 John Tur
 //  
-//  This file is part of BrickLua, a high-performance Lua 5.4 implementation in C#.
+//  This file is part of BrickLua, a simple Lua 5.4 CIL compiler.
 //  
 //  BrickLua is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Lesser General Public License as published by

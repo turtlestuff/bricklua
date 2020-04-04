@@ -1,7 +1,7 @@
 ﻿//  
 //  Copyright (C) 2020 John Tur
 //  
-//  This file is part of BrickLua, a high-performance Lua 5.4 implementation in C#.
+//  This file is part of BrickLua, a simple Lua 5.4 CIL compiler.
 //  
 //  BrickLua is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Lesser General Public License as published by
@@ -17,9 +17,7 @@
 //  along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-using System;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace BrickLua.Syntax
@@ -64,7 +62,7 @@ namespace BrickLua.Syntax
                 return NextToken();
 
             Diagnostics.ReportUnexpectedToken(current.Location, kind, current.Kind);
-            return new SyntaxToken(kind, default);
+            return new SyntaxToken(kind, current.Location, true);
         }
 
         bool CurrentIs(SyntaxKind kind, [NotNullWhen(true)] out SyntaxToken? token)
