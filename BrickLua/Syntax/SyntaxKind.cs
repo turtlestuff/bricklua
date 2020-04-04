@@ -25,7 +25,7 @@ namespace BrickLua.Syntax
         BadToken,
 
         Name,
-        StringLiteral,
+        LiteralString,
         IntegerConstant,
         FloatConstant,
 

@@ -21,7 +21,7 @@ namespace BrickLua.Syntax
 {
     public sealed class NumericalForStatementSyntax : StatementSyntax
     {
-        public NumericalForStatementSyntax(SyntaxToken initialValueIdentifier, ExpressionSyntax initialValue, ExpressionSyntax limit, ExpressionSyntax? step, BlockStatementSyntax body, in SequenceRange location) : base(location)
+        public NumericalForStatementSyntax(SyntaxToken initialValueIdentifier, ExpressionSyntax initialValue, ExpressionSyntax limit, ExpressionSyntax? step, BlockSyntax body, in SequenceRange location) : base(location)
         {
             InitialValueIdentifier = initialValueIdentifier;
             InitialValue = initialValue;
@@ -34,6 +34,6 @@ namespace BrickLua.Syntax
         public ExpressionSyntax InitialValue { get; }
         public ExpressionSyntax Limit { get; }
         public ExpressionSyntax? Step { get; }
-        public BlockStatementSyntax Body { get; }
+        public BlockSyntax Body { get; }
     }
 }

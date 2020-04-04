@@ -21,11 +21,11 @@ namespace BrickLua.Syntax
 {
     public class ChunkSyntax : SyntaxNode
     {
-        public ChunkSyntax(BlockStatementSyntax body, in SequenceRange location) : base(location)
+        public ChunkSyntax(BlockSyntax body, in SequenceRange location) : base(location)
         {
             Body = body;
         }
 
-        public BlockStatementSyntax Body { get; }
+        public BlockSyntax Body { get; }
     }
 }

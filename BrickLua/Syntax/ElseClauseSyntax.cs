@@ -21,11 +21,11 @@ namespace BrickLua.Syntax
 {
     public class ElseClauseSyntax : StatementSyntax
     {
-        public ElseClauseSyntax(BlockStatementSyntax body, in SequenceRange location) : base(location)
+        public ElseClauseSyntax(BlockSyntax body, in SequenceRange location) : base(location)
         {
             Body = body;
         }
 
-        public BlockStatementSyntax Body { get; }
+        public BlockSyntax Body { get; }
     }
 }

@@ -21,9 +21,9 @@ using System.Collections.Immutable;
 
 namespace BrickLua.Syntax
 {
-    public sealed class BlockStatementSyntax : StatementSyntax
+    public sealed class BlockSyntax : StatementSyntax
     {
-        public BlockStatementSyntax(ImmutableArray<StatementSyntax> body, ReturnStatementSyntax? @return, in SequenceRange location) : base(location)
+        public BlockSyntax(ImmutableArray<StatementSyntax> body, ReturnStatementSyntax? @return, in SequenceRange location) : base(location)
         {
             Body = body;
             Return = @return;

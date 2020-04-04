@@ -30,8 +30,6 @@ namespace BrickLua.Syntax
         {
             switch (kind)
             {
-                case SyntaxKind.Caret:
-                    return 12;
                 case SyntaxKind.Not:
                 case SyntaxKind.Hash:
                 case SyntaxKind.Minus:
@@ -48,7 +46,7 @@ namespace BrickLua.Syntax
             switch (kind)
             {
                 case SyntaxKind.Caret:
-                    return 11;
+                    return 12;
 
                 case SyntaxKind.Asterisk:
                 case SyntaxKind.Slash:

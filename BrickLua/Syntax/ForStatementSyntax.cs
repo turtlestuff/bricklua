@@ -23,7 +23,7 @@ namespace BrickLua.Syntax
 {
     public sealed class ForStatementSyntax : StatementSyntax
     {
-        public ForStatementSyntax(ImmutableArray<SyntaxToken> nameList, ImmutableArray<ExpressionSyntax> expressionList, BlockStatementSyntax body, in SequenceRange location) : base(location)
+        public ForStatementSyntax(ImmutableArray<SyntaxToken> nameList, ImmutableArray<ExpressionSyntax> expressionList, BlockSyntax body, in SequenceRange location) : base(location)
         {
             NameList = nameList;
             ExpressionList = expressionList;
@@ -32,6 +32,6 @@ namespace BrickLua.Syntax
 
         public ImmutableArray<SyntaxToken> NameList { get; }
         public ImmutableArray<ExpressionSyntax> ExpressionList { get; }
-        public BlockStatementSyntax Body { get; }
+        public BlockSyntax Body { get; }
     }
 }

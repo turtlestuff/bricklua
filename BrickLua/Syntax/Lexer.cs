@@ -86,7 +86,7 @@ namespace BrickLua.Syntax
 
                 case '"':
                     reader.Advance(1);
-                    var strStart = reader.Consumed - 1;
+                    var strStart = reader.Consumed;
 
                     if (!reader.TryReadTo(sequence: out var seq, '"'))
                     {
@@ -95,7 +95,7 @@ namespace BrickLua.Syntax
                         Diagnostics.ReportUnterminatedString(new SequenceRange(start, reader.Sequence.End));
                     }
 
-                    return new SyntaxToken(SyntaxKind.StringLiteral, ParseString(seq, false, strStart), Current);
+                    return new SyntaxToken(SyntaxKind.LiteralString, ParseString(seq, false, strStart), Current);
 
                 case '[':
                     reader.Advance(1);
@@ -117,19 +117,19 @@ namespace BrickLua.Syntax
                     endLongLiteral[^1] = ']';
 
                     var startString = reader.Position;
-                    var startIndex = reader.Consumed - 1;
+                    var startIndex = reader.Consumed;
 
                     if (!reader.TryReadTo(sequence: out var literal, endLongLiteral))
                     {
                         stop = true;
                         Diagnostics.ReportUnterminatedLongString(new SequenceRange(start, reader.Sequence.End));
-                        return new SyntaxToken(SyntaxKind.StringLiteral, ParseString(reader.Sequence.Slice(startString), true, startIndex), new SequenceRange(start, reader.Sequence.End));
+                        return new SyntaxToken(SyntaxKind.LiteralString, ParseString(reader.Sequence.Slice(startString), true, startIndex), new SequenceRange(start, reader.Sequence.End));
                     }
                     var read = new SequenceReader<char>(literal);
 
                     var str = literal.ToArray();
 
-                    return new SyntaxToken(SyntaxKind.StringLiteral, ParseString(literal, true, startIndex), Current);
+                    return new SyntaxToken(SyntaxKind.LiteralString, ParseString(literal, true, startIndex), Current);
 
                 case '-':
                     if (reader.TryPeek(out var next) && next >= '0' && next <= '9')
@@ -376,7 +376,7 @@ namespace BrickLua.Syntax
                         switch (c)
                         {
                             case 'x':
-                                if (!reader.TryRead(out var ch1) & !reader.TryRead(out var ch2))
+                                if (!reader.TryRead(out var ch1) || !reader.TryRead(out var ch2))
                                 {
                                     Diagnostics.ReportIncompleteEscapeSequence(
                                         new SequenceRange(
@@ -388,6 +388,7 @@ namespace BrickLua.Syntax
                                 var num = (char) byte.Parse(stackalloc char[] { ch1, ch2 }, NumberStyles.AllowHexSpecifier);
                                 buffer.Write(MemoryMarshal.CreateSpan(ref num, 1));
                                 break;
+
                             case 'u':
                                 if (!reader.TryRead(out var openBrace) || openBrace != '{')
                                 {
@@ -435,6 +436,7 @@ namespace BrickLua.Syntax
                                 var shortNum = (char) short.Parse(escape);
                                 buffer.Write(MemoryMarshal.CreateSpan(ref shortNum, 1));
                                 break;
+
                             default:
                                 var start = this.reader.Sequence.GetPosition(startIndex + reader.Consumed);
                                 var end = this.reader.Sequence.GetPosition(startIndex + reader.Consumed + 1);

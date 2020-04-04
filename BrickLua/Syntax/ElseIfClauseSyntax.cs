@@ -21,13 +21,13 @@ namespace BrickLua.Syntax
 {
     public class ElseIfClauseSyntax : StatementSyntax
     {
-        public ElseIfClauseSyntax(ExpressionSyntax test, BlockStatementSyntax consequent, in SequenceRange location) : base(location)
+        public ElseIfClauseSyntax(ExpressionSyntax test, BlockSyntax consequent, in SequenceRange location) : base(location)
         {
             Test = test;
             Consequent = consequent;
         }
 
         public ExpressionSyntax Test { get; }
-        public BlockStatementSyntax Consequent { get; }
+        public BlockSyntax Consequent { get; }
     }
 }

@@ -21,13 +21,13 @@ namespace BrickLua.Syntax
 {
     public sealed class RepeatStatementSyntax : StatementSyntax
     {
-        public RepeatStatementSyntax(BlockStatementSyntax body, ExpressionSyntax condition, in SequenceRange location) : base(location)
+        public RepeatStatementSyntax(BlockSyntax body, ExpressionSyntax condition, in SequenceRange location) : base(location)
         {
             Body = body;
             Condition = condition;
         }
 
-        public BlockStatementSyntax Body { get; }
+        public BlockSyntax Body { get; }
         public ExpressionSyntax Condition { get; }
     }
 }
