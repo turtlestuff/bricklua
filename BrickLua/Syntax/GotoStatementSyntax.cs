@@ -28,5 +28,4 @@ namespace BrickLua.Syntax
 
         public SyntaxToken Label { get; }
     }
-
 }

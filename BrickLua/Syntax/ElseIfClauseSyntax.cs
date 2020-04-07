@@ -19,7 +19,7 @@
 
 namespace BrickLua.Syntax
 {
-    public class ElseIfClauseSyntax : StatementSyntax
+    public sealed class ElseIfClauseSyntax : StatementSyntax
     {
         public ElseIfClauseSyntax(ExpressionSyntax test, BlockSyntax consequent, in SequenceRange location) : base(location)
         {

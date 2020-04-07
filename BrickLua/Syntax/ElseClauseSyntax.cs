@@ -19,7 +19,7 @@
 
 namespace BrickLua.Syntax
 {
-    public class ElseClauseSyntax : StatementSyntax
+    public sealed class ElseClauseSyntax : StatementSyntax
     {
         public ElseClauseSyntax(BlockSyntax body, in SequenceRange location) : base(location)
         {

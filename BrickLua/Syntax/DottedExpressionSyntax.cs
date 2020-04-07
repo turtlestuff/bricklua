@@ -21,7 +21,7 @@ using System.Collections.Immutable;
 
 namespace BrickLua.Syntax
 {
-    public class DottedExpressionSyntax : PrefixExpressionSyntax
+    public sealed class DottedExpressionSyntax : PrefixExpressionSyntax
     {
         public DottedExpressionSyntax(ImmutableArray<PrefixExpressionSyntax> dottedExpressions, in SequenceRange location) : base(location)
         {

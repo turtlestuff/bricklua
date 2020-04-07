@@ -33,7 +33,7 @@ namespace BrickLua.Syntax
         public ImmutableArray<ExpressionSyntax> Expressions { get; }
     }
 
-    public class LocalVariableDeclaration
+    public sealed class LocalVariableDeclaration
     {
         public LocalVariableDeclaration(SyntaxToken name, SyntaxToken? attribute)
         {

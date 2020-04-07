@@ -19,7 +19,7 @@
 
 namespace BrickLua.Syntax
 {
-    public class IndexExpressionSyntax : PrefixExpressionSyntax
+    public sealed class IndexExpressionSyntax : PrefixExpressionSyntax
     {
         public IndexExpressionSyntax(PrefixExpressionSyntax indexedExpression, ExpressionSyntax indexArgument, in SequenceRange location) : base(location)
         {
@@ -30,5 +30,4 @@ namespace BrickLua.Syntax
         public PrefixExpressionSyntax IndexedExpression { get; }
         public ExpressionSyntax IndexArgument { get; }
     }
-
 }

@@ -19,7 +19,7 @@
 
 namespace BrickLua.Syntax
 {
-    public class ChunkSyntax : SyntaxNode
+    public sealed class ChunkSyntax : SyntaxNode
     {
         public ChunkSyntax(BlockSyntax body, in SequenceRange location) : base(location)
         {
