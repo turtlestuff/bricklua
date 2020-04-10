@@ -19,7 +19,6 @@
 
 using System;
 using System.Buffers;
-using System.ComponentModel.DataAnnotations;
 using BrickLua.Syntax;
 
 namespace BrickLua.Console
@@ -34,7 +33,7 @@ namespace BrickLua.Console
             {
                 var seq = new ReadOnlySequence<char>(Console.ReadLine().AsMemory());
                 var parser = new Parser(new Lexer(new SequenceReader<char>(seq)));
-                parser.ParseFile().WriteTo(Console.Out);
+                parser.ParseChunk().WriteTo(Console.Out);
 
                 foreach (var diag in parser.Diagnostics)
                 {

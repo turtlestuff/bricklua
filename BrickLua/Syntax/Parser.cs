@@ -124,7 +124,7 @@ namespace BrickLua.Syntax
 
         SyntaxNode GetLast<TNode>(ImmutableArray<TNode> node, SyntaxNode last) where TNode : SyntaxNode => node.IsDefaultOrEmpty ? last : node[^1];
 
-        public ChunkSyntax ParseFile()
+        public ChunkSyntax ParseChunk()
         {
             var block = ParseBlock();
             return new ChunkSyntax(block, block.Location);
