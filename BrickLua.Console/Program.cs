@@ -17,9 +17,10 @@
 //  along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.
 //
 
+using BrickLua.Syntax;
+
 using System;
 using System.Buffers;
-using BrickLua.Syntax;
 
 namespace BrickLua.Console
 {
@@ -66,7 +67,7 @@ namespace BrickLua.Console
 
                     var underlineLength = text.Slice(location.Start, location.End).Length;
                     var padLength = text.Slice(startPos, location.Start).Length + underlineLength;
-                    Console.WriteLine($"{new string('~', (int) underlineLength).PadLeft((int) padLength)}");
+                    Console.WriteLine($"{new string('~', (int)underlineLength).PadLeft((int)padLength)}");
                 }
             }
         }

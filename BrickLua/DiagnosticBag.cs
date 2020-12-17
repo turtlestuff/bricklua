@@ -17,11 +17,11 @@
 //  along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-using System;
+using BrickLua.Syntax;
+
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
-using BrickLua.Syntax;
 
 namespace BrickLua
 {

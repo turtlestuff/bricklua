@@ -32,7 +32,7 @@ namespace BrickLua.Syntax
         public SequencePosition Start { get; }
         public SequencePosition End { get; }
 
-        public override bool Equals(object obj) => obj is SequenceRange span ? Equals(span) : false;
+        public override bool Equals(object? obj) => obj is SequenceRange span && Equals(span);
         public override int GetHashCode() => HashCode.Combine(Start, End);
 
         public static bool operator ==(in SequenceRange left, in SequenceRange right) => left.Equals(right);

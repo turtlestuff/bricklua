@@ -49,20 +49,20 @@ namespace BrickLua.Syntax
                 {
                     if (typeof(SyntaxNode).IsAssignableFrom(property.PropertyType))
                     {
-                        var child = (SyntaxNode) property.GetValue(source)!;
+                        var child = (SyntaxNode)property.GetValue(source)!;
                         if (child is { })
                             yield return child;
                     }
                     else if (typeof(IEnumerable<SyntaxNode>).IsAssignableFrom(property.PropertyType))
                     {
-                        var children = (IEnumerable<SyntaxNode>) property.GetValue(source)!;
+                        var children = (IEnumerable<SyntaxNode>)property.GetValue(source)!;
                         foreach (var child in children)
                             if (child is { })
                                 yield return child;
                     }
                     else if (typeof(FunctionBody).IsAssignableFrom(property.PropertyType))
                     {
-                        var body = (FunctionBody) property.GetValue(source)!;
+                        var body = (FunctionBody)property.GetValue(source)!;
                         foreach (var param in body.ParameterNames)
                             if (param is { })
                                 yield return param;
@@ -71,7 +71,7 @@ namespace BrickLua.Syntax
                     }
                     else if (typeof(FunctionName).IsAssignableFrom(property.PropertyType))
                     {
-                        var name = (FunctionName) property.GetValue(source)!;
+                        var name = (FunctionName)property.GetValue(source)!;
                         foreach (var dottedName in name.DottedNames)
                             if (dottedName is { })
                                 yield return dottedName;
@@ -81,7 +81,7 @@ namespace BrickLua.Syntax
                     }
                     else if (typeof(FunctionBody).IsAssignableFrom(property.PropertyType))
                     {
-                        var body = (FunctionBody) property.GetValue(source)!;
+                        var body = (FunctionBody)property.GetValue(source)!;
                         foreach (var param in body.ParameterNames)
                         {
                             if (param is { })
@@ -92,7 +92,7 @@ namespace BrickLua.Syntax
                     }
                     else if (typeof(IEnumerable<LocalVariableDeclaration>).IsAssignableFrom(property.PropertyType))
                     {
-                        var decls = (IEnumerable<LocalVariableDeclaration>) property.GetValue(source)!;
+                        var decls = (IEnumerable<LocalVariableDeclaration>)property.GetValue(source)!;
 
                         foreach (var decl in decls)
                         {

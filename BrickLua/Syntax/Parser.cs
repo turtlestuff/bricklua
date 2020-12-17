@@ -756,7 +756,7 @@ namespace BrickLua.Syntax
                 }
             }
 
-            exit:
+        exit:
 
             var clauses = elseIfClauses.ToImmutable();
             return new IfStatementSyntax(expr, body, clauses, elseClause, From(@if,

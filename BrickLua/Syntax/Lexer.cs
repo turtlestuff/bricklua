@@ -26,12 +26,12 @@ using System.Text;
 
 namespace BrickLua.Syntax
 {
-    [SuppressMessage("Performance", "CA1815:Override equals and operator equals on value types", Justification = "Not an expected scenario")]
     public ref struct Lexer
     {
         bool stop;
         SequenceReader<char> reader;
         SequencePosition start;
+
         public DiagnosticBag Diagnostics { get; }
 
         public Lexer(in SequenceReader<char> reader)
@@ -44,7 +44,7 @@ namespace BrickLua.Syntax
 
         public SyntaxToken Lex()
         {
-            @continue:
+        @continue:
             if (stop || !reader.TryPeek(out var ch))
             {
                 return new SyntaxToken(SyntaxKind.EndOfFile, new SequenceRange(reader.Sequence.GetPosition(reader.Sequence.Length - 1), reader.Sequence.End));
@@ -175,10 +175,7 @@ namespace BrickLua.Syntax
                     reader.Advance(1);
 
                     if (NextIs('.'))
-                        if (NextIs('.'))
-                            return NewToken(SyntaxKind.DotDotDot);
-                        else
-                            return NewToken(SyntaxKind.DotDot);
+                        return NextIs('.') ? NewToken(SyntaxKind.DotDotDot) : NewToken(SyntaxKind.DotDot);
 
                     return NewToken(SyntaxKind.Dot);
 
@@ -226,7 +223,7 @@ namespace BrickLua.Syntax
             throw new NotImplementedException("This type of literal is not supported");
         }
 
-        bool LexInteger(out SyntaxToken token)
+        bool LexInteger([NotNullWhen(true)] out SyntaxToken? token)
         {
             bool negative = NextIs('-');
             if (NextIs('0') && NextIs('X', 'x'))
@@ -303,7 +300,7 @@ namespace BrickLua.Syntax
 
         ReadOnlyMemory<char> ParseString(in ReadOnlySequence<char> str, bool multiLine, long startIndex)
         {
-            var buffer = new ArrayBufferWriter<char>(checked((int) str.Length));
+            var buffer = new ArrayBufferWriter<char>(checked((int)str.Length));
 
             var reader = new SequenceReader<char>(str);
 
@@ -385,7 +382,7 @@ namespace BrickLua.Syntax
                                     break;
                                 }
 
-                                var num = (char) byte.Parse(stackalloc char[] { ch1, ch2 }, NumberStyles.AllowHexSpecifier);
+                                var num = (char)byte.Parse(stackalloc char[] { ch1, ch2 }, NumberStyles.AllowHexSpecifier);
                                 buffer.Write(MemoryMarshal.CreateSpan(ref num, 1));
                                 break;
 
@@ -433,7 +430,7 @@ namespace BrickLua.Syntax
                                     escape = escape[..1];
                                 }
 
-                                var shortNum = (char) short.Parse(escape);
+                                var shortNum = (char)short.Parse(escape);
                                 buffer.Write(MemoryMarshal.CreateSpan(ref shortNum, 1));
                                 break;
 
@@ -456,7 +453,7 @@ namespace BrickLua.Syntax
             return buffer.WrittenMemory;
         }
 
-        SequenceRange Current => new SequenceRange(start, reader.Position);
+        SequenceRange Current => new(start, reader.Position);
 
         bool NextIs(char c)
         {
@@ -481,6 +478,6 @@ namespace BrickLua.Syntax
         }
 
 
-        SyntaxToken NewToken(SyntaxKind type) => new SyntaxToken(type, Current);
+        SyntaxToken NewToken(SyntaxKind type) => new(type, Current);
     }
 }

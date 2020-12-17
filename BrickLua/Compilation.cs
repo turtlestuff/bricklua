@@ -16,8 +16,9 @@
 //  along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-using System.Collections.Immutable;
 using BrickLua.Syntax;
+
+using System.Collections.Immutable;
 
 namespace BrickLua
 {

@@ -17,7 +17,6 @@
 //  along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-using System.Buffers;
 using BrickLua.Syntax;
 
 namespace BrickLua
