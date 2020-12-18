@@ -120,9 +120,10 @@ namespace BrickLua.Syntax
             }
         }
 
-        SequenceRange From(SyntaxNode first, SyntaxNode last) => new SequenceRange(first.Location.Start, last.Location.End);
+        static SequenceRange From(SyntaxNode first, SyntaxNode last) => new(first.Location.Start, last.Location.End);
 
-        SyntaxNode GetLast<TNode>(ImmutableArray<TNode> node, SyntaxNode last) where TNode : SyntaxNode => node.IsDefaultOrEmpty ? last : node[^1];
+        static SyntaxNode GetLast<TNode>(ImmutableArray<TNode> node, SyntaxNode last) where TNode : SyntaxNode 
+            => node.IsDefaultOrEmpty ? last : node[^1];
 
         public ChunkSyntax ParseChunk()
         {
@@ -561,7 +562,7 @@ namespace BrickLua.Syntax
 
                 statements.Add(new FieldAssignmentExpressionSyntax(target, value, From(target, value ?? target)));
 
-                if (current.Kind == SyntaxKind.Semicolon || current.Kind == SyntaxKind.Comma)
+                if (current.Kind is SyntaxKind.Semicolon or SyntaxKind.Comma)
                 {
                     NextToken();
                 }
@@ -582,7 +583,8 @@ namespace BrickLua.Syntax
 
             ImmutableArray<SyntaxToken> names;
             bool isVararg;
-            if (current.Kind != SyntaxKind.CloseParenthesis)
+
+            if (current.Kind is not SyntaxKind.CloseParenthesis)
             {
                 names = ParseParameterList(out isVararg);
             }
@@ -605,14 +607,14 @@ namespace BrickLua.Syntax
         /// <param name="isVarargs">Returns whether the parameter list includes a varargs expression.</param>
         ImmutableArray<SyntaxToken> ParseParameterList(out bool isVarargs)
         {
-            if (current.Kind == SyntaxKind.DotDot)
+            if (current.Kind is SyntaxKind.DotDot)
             {
                 isVarargs = true;
                 return ImmutableArray<SyntaxToken>.Empty;
             }
 
             var list = ParseNameList();
-            if (current.Kind == SyntaxKind.Comma && Peek().Kind == SyntaxKind.DotDotDot)
+            if (current.Kind is SyntaxKind.Comma && Peek().Kind is SyntaxKind.DotDotDot)
             {
                 NextToken();
                 NextToken();
@@ -634,7 +636,7 @@ namespace BrickLua.Syntax
         {
             var statements = ImmutableArray.CreateBuilder<SyntaxToken>();
             statements.Add(MatchToken(SyntaxKind.Name));
-            while (current.Kind == SyntaxKind.Comma && Peek().Kind == SyntaxKind.Name)
+            while (current.Kind is SyntaxKind.Comma && Peek().Kind is SyntaxKind.Name)
             {
                 NextToken();
                 statements.Add(NextToken());
@@ -759,8 +761,8 @@ namespace BrickLua.Syntax
         exit:
 
             var clauses = elseIfClauses.ToImmutable();
-            return new IfStatementSyntax(expr, body, clauses, elseClause, From(@if,
-                elseClause is { } ? elseClause : GetLast(clauses, GetLast(body.Body, then))));
+            return new IfStatementSyntax(expr, body, clauses, elseClause, 
+                From(@if, elseClause ?? GetLast(clauses, GetLast(body.Body, then))));
         }
 
         /// <summary>
@@ -792,9 +794,9 @@ namespace BrickLua.Syntax
 
                     return new NumericalForStatementSyntax(name, initial, limit, step, body, From(@for, end));
 
-                default:
                 case SyntaxKind.Comma:
                 case SyntaxKind.In:
+                default:
                     var list = ParseNameList();
                     MatchToken(SyntaxKind.In);
                     var exprs = ParseExpressionList();
