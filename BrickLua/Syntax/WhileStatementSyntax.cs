@@ -19,16 +19,6 @@
 
 namespace BrickLua.Syntax
 {
-    public sealed class WhileStatementExpression : StatementSyntax
-    {
-        public WhileStatementExpression(ExpressionSyntax condition, BlockSyntax body, in SequenceRange location) : base(location)
-        {
-            Condition = condition;
-            Body = body;
-        }
-
-        public ExpressionSyntax Condition { get; }
-        public BlockSyntax Body { get; }
-    }
+    public sealed record WhileStatementExpression(ExpressionSyntax Condition, BlockSyntax Body, in SequenceRange Location) : StatementSyntax(Location);
 
 }

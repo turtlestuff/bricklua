@@ -19,13 +19,5 @@
 
 namespace BrickLua.Syntax
 {
-    public sealed class FunctionExpressionSyntax : ExpressionSyntax
-    {
-        public FunctionExpressionSyntax(FunctionBody body, in SequenceRange location) : base(location)
-        {
-            Body = body;
-        }
-
-        public FunctionBody Body { get; }
-    }
+    public sealed record FunctionExpressionSyntax(FunctionBody Body, in SequenceRange Location) : ExpressionSyntax(Location);
 }

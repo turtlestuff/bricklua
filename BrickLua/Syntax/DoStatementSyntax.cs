@@ -19,14 +19,5 @@
 
 namespace BrickLua.Syntax
 {
-    public sealed class DoStatementSyntax : StatementSyntax
-    {
-        public DoStatementSyntax(BlockSyntax body, in SequenceRange location) : base(location)
-        {
-            Body = body;
-        }
-
-        public BlockSyntax Body { get; }
-    }
-
+    public sealed record DoStatementSyntax(BlockSyntax Body, in SequenceRange Location) : StatementSyntax(Location);
 }

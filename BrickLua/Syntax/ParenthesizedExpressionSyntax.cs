@@ -19,13 +19,5 @@
 
 namespace BrickLua.Syntax
 {
-    public sealed class ParenthesizedExpressionSyntax : PrefixExpressionSyntax
-    {
-        public ParenthesizedExpressionSyntax(ExpressionSyntax expression, in SequenceRange location) : base(location)
-        {
-            Expression = expression;
-        }
-
-        public ExpressionSyntax Expression { get; }
-    }
+    public sealed record ParenthesizedExpressionSyntax(ExpressionSyntax Expression, in SequenceRange Location) : PrefixExpressionSyntax(Location);
 }

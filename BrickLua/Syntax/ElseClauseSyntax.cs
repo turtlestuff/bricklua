@@ -19,13 +19,5 @@
 
 namespace BrickLua.Syntax
 {
-    public sealed class ElseClauseSyntax : StatementSyntax
-    {
-        public ElseClauseSyntax(BlockSyntax body, in SequenceRange location) : base(location)
-        {
-            Body = body;
-        }
-
-        public BlockSyntax Body { get; }
-    }
+    public sealed record ElseClauseSyntax(BlockSyntax Body, in SequenceRange Location) : StatementSyntax(Location);
 }

@@ -19,13 +19,5 @@
 
 namespace BrickLua.Syntax
 {
-    public sealed class GotoStatementSyntax : StatementSyntax
-    {
-        public GotoStatementSyntax(in SyntaxToken label, in SequenceRange location) : base(location)
-        {
-            Label = label;
-        }
-
-        public SyntaxToken Label { get; }
-    }
+    public sealed record GotoStatementSyntax(SyntaxToken Label, in SequenceRange Location) : StatementSyntax(Location);
 }

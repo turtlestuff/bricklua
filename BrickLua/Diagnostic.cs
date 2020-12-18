@@ -21,17 +21,8 @@ using BrickLua.Syntax;
 
 namespace BrickLua
 {
-    public sealed class Diagnostic
+    public sealed record Diagnostic(in SequenceRange Location, string Message)
     {
-        public Diagnostic(in SequenceRange location, string message)
-        {
-            Location = location;
-            Message = message;
-        }
-
-        public SequenceRange Location { get; }
-        public string Message { get; }
-
         public override string ToString() => Message;
     }
 }

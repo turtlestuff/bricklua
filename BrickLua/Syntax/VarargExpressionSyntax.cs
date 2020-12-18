@@ -19,10 +19,5 @@
 
 namespace BrickLua.Syntax
 {
-    public sealed class VarargExpressionSyntax : ExpressionSyntax
-    {
-        public VarargExpressionSyntax(in SequenceRange location) : base(location)
-        {
-        }
-    }
+    public sealed record VarargExpressionSyntax(in SequenceRange Location) : ExpressionSyntax(Location);
 }

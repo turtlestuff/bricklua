@@ -21,25 +21,7 @@ using System.Collections.Immutable;
 
 namespace BrickLua.Syntax
 {
-    public sealed class TableConstructorExpressionSyntax : ExpressionSyntax
-    {
-        public TableConstructorExpressionSyntax(ImmutableArray<FieldAssignmentExpressionSyntax> fieldAssignments, in SequenceRange location) : base(location)
-        {
-            FieldAssignments = fieldAssignments;
-        }
+    public sealed record TableConstructorExpressionSyntax(ImmutableArray<FieldAssignmentExpressionSyntax> FieldAssignments, in SequenceRange Location) : ExpressionSyntax(Location);
 
-        public ImmutableArray<FieldAssignmentExpressionSyntax> FieldAssignments { get; }
-    }
-
-    public sealed class FieldAssignmentExpressionSyntax : ExpressionSyntax
-    {
-        public FieldAssignmentExpressionSyntax(SyntaxNode field, ExpressionSyntax? value, in SequenceRange location) : base(location)
-        {
-            Field = field;
-            Value = value;
-        }
-
-        public SyntaxNode Field { get; }
-        public ExpressionSyntax? Value { get; }
-    }
+    public sealed record FieldAssignmentExpressionSyntax(SyntaxNode Field, ExpressionSyntax? Value, in SequenceRange Location) : ExpressionSyntax(Location);
 }

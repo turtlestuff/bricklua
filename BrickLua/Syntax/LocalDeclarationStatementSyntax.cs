@@ -21,27 +21,7 @@ using System.Collections.Immutable;
 
 namespace BrickLua.Syntax
 {
-    public sealed class LocalDeclarationStatementSyntax : StatementSyntax
-    {
-        public LocalDeclarationStatementSyntax(ImmutableArray<LocalVariableDeclaration> declarations, ImmutableArray<ExpressionSyntax> expressions, in SequenceRange location) : base(location)
-        {
-            Declarations = declarations;
-            Expressions = expressions;
-        }
+    public sealed record LocalDeclarationStatementSyntax(ImmutableArray<LocalVariableDeclaration> Declarations, ImmutableArray<ExpressionSyntax> Expressions, in SequenceRange Location) : StatementSyntax(Location);
 
-        public ImmutableArray<LocalVariableDeclaration> Declarations { get; }
-        public ImmutableArray<ExpressionSyntax> Expressions { get; }
-    }
-
-    public sealed class LocalVariableDeclaration
-    {
-        public LocalVariableDeclaration(SyntaxToken name, SyntaxToken? attribute)
-        {
-            Name = name;
-            Attribute = attribute;
-        }
-
-        public SyntaxToken Name { get; }
-        public SyntaxToken? Attribute { get; }
-    }
+    public sealed record LocalVariableDeclaration(SyntaxToken Name, SyntaxToken? Attribute);
 }

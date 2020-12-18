@@ -19,13 +19,5 @@
 
 namespace BrickLua.Syntax
 {
-    public sealed class LiteralExpressionSyntax : ExpressionSyntax
-    {
-        public LiteralExpressionSyntax(SyntaxToken value, in SequenceRange location) : base(location)
-        {
-            Value = value;
-        }
-
-        public SyntaxToken Value { get; }
-    }
+    public sealed record LiteralExpressionSyntax(SyntaxToken Value, in SequenceRange Location) : ExpressionSyntax(Location);
 }

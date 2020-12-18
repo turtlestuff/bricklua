@@ -19,15 +19,5 @@
 
 namespace BrickLua.Syntax
 {
-    public sealed class ElseIfClauseSyntax : StatementSyntax
-    {
-        public ElseIfClauseSyntax(ExpressionSyntax test, BlockSyntax consequent, in SequenceRange location) : base(location)
-        {
-            Test = test;
-            Consequent = consequent;
-        }
-
-        public ExpressionSyntax Test { get; }
-        public BlockSyntax Consequent { get; }
-    }
+    public sealed record ElseIfClauseSyntax(ExpressionSyntax Test, BlockSyntax Consequent, in SequenceRange Location) : StatementSyntax(Location);
 }

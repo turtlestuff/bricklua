@@ -21,19 +21,6 @@ using System.Collections.Immutable;
 
 namespace BrickLua.Syntax
 {
-    public class IfStatementSyntax : StatementSyntax
-    {
-        public IfStatementSyntax(ExpressionSyntax condition, BlockSyntax consequent, ImmutableArray<ElseIfClauseSyntax> elseIfClauses, ElseClauseSyntax? elseClause, in SequenceRange location) : base(location)
-        {
-            Condition = condition;
-            Consequent = consequent;
-            ElseIfClauses = elseIfClauses;
-            ElseClause = elseClause;
-        }
-
-        public ExpressionSyntax Condition { get; }
-        public BlockSyntax Consequent { get; }
-        public ImmutableArray<ElseIfClauseSyntax> ElseIfClauses { get; }
-        public ElseClauseSyntax? ElseClause { get; }
-    }
+    public record IfStatementSyntax(ExpressionSyntax Condition, BlockSyntax Consequent, ImmutableArray<ElseIfClauseSyntax> ElseIfClauses, ElseClauseSyntax? ElseClause, in 
+SequenceRange Location) : StatementSyntax(Location);
 }

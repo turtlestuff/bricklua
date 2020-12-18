@@ -19,18 +19,5 @@
 
 namespace BrickLua.Syntax
 {
-    public sealed class BinaryExpressionSyntax : ExpressionSyntax
-    {
-        public BinaryExpressionSyntax(ExpressionSyntax left, SyntaxKind @operator, ExpressionSyntax right, in SequenceRange location) : base(location)
-        {
-            Left = left;
-            Operator = @operator;
-            Right = right;
-        }
-
-        public ExpressionSyntax Left { get; }
-        public SyntaxKind Operator { get; }
-        public ExpressionSyntax Right { get; }
-    }
-
+    public sealed record BinaryExpressionSyntax(ExpressionSyntax Left, SyntaxKind Operator, ExpressionSyntax Right, in SequenceRange Location) : ExpressionSyntax(Location);
 }

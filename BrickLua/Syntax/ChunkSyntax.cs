@@ -19,13 +19,5 @@
 
 namespace BrickLua.Syntax
 {
-    public sealed class ChunkSyntax : SyntaxNode
-    {
-        public ChunkSyntax(BlockSyntax body, in SequenceRange location) : base(location)
-        {
-            Body = body;
-        }
-
-        public BlockSyntax Body { get; }
-    }
+    public sealed record ChunkSyntax(BlockSyntax Body, in SequenceRange Location) : SyntaxNode(Location);
 }

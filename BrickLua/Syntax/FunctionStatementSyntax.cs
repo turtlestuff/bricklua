@@ -21,27 +21,7 @@ using System.Collections.Immutable;
 
 namespace BrickLua.Syntax
 {
-    public sealed class FunctionStatementSyntax : StatementSyntax
-    {
-        public FunctionStatementSyntax(FunctionName name, FunctionBody body, in SequenceRange location) : base(location)
-        {
-            Name = name;
-            Body = body;
-        }
+    public sealed record FunctionStatementSyntax(FunctionName Name, FunctionBody Body, in SequenceRange Location) : StatementSyntax(Location);
 
-        public FunctionName Name { get; }
-        public FunctionBody Body { get; }
-    }
-
-    public sealed class FunctionName
-    {
-        public FunctionName(ImmutableArray<SyntaxToken> dottedNames, SyntaxToken? fieldNames)
-        {
-            DottedNames = dottedNames;
-            FieldName = fieldNames;
-        }
-
-        public ImmutableArray<SyntaxToken> DottedNames { get; }
-        public SyntaxToken? FieldName { get; }
-    }
+    public sealed record FunctionName(ImmutableArray<SyntaxToken> DottedNames, SyntaxToken? FieldName);
 }

@@ -21,18 +21,6 @@ using System.Collections.Immutable;
 
 namespace BrickLua.Syntax
 {
-    public sealed class CallExpressionSyntax : PrefixExpressionSyntax
-    {
-        public CallExpressionSyntax(PrefixExpressionSyntax calledExpression, SyntaxToken? name, ImmutableArray<ExpressionSyntax> arguments, in SequenceRange location) : base(location)
-        {
-            CalledExpression = calledExpression;
-            Name = name;
-            Arguments = arguments;
-        }
-
-        public PrefixExpressionSyntax CalledExpression { get; }
-        public SyntaxToken? Name { get; }
-        public ImmutableArray<ExpressionSyntax> Arguments { get; }
-    }
+    public sealed record CallExpressionSyntax(PrefixExpressionSyntax CalledExpression, SyntaxToken? Name, ImmutableArray<ExpressionSyntax> Arguments, in SequenceRange Location) : PrefixExpressionSyntax(Location);
 
 }

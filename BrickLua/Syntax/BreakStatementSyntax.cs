@@ -19,10 +19,5 @@
 
 namespace BrickLua.Syntax
 {
-    public sealed class BreakStatementSyntax : StatementSyntax
-    {
-        public BreakStatementSyntax(in SequenceRange location) : base(location)
-        {
-        }
-    }
+    public sealed record BreakStatementSyntax(in SequenceRange Location) : StatementSyntax(Location);
 }

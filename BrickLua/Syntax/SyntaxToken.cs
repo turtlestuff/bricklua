@@ -19,7 +19,7 @@
 
 namespace BrickLua.Syntax
 {
-    public sealed class SyntaxToken : SyntaxNode
+    public sealed record SyntaxToken : SyntaxNode
     {
         public SyntaxToken(SyntaxKind kind, in SequenceRange location, bool missing = false) : base(location)
         {
@@ -44,12 +44,12 @@ namespace BrickLua.Syntax
             Value = value;
         }
 
-        public object? Value { get; }
-        public SyntaxKind Kind { get; }
+        public object? Value { get; init; }
+        public SyntaxKind Kind { get; init; }
 
         /// <summary>
         /// Gets a value indicating whether the token was synthesized.
         /// </summary>
-        public bool IsMissing { get; }
+        public bool IsMissing { get; init; }
     }
 }

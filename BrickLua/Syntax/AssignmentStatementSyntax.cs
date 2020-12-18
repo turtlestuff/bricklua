@@ -21,15 +21,5 @@ using System.Collections.Immutable;
 
 namespace BrickLua.Syntax
 {
-    public sealed class AssignmentStatementSyntax : StatementSyntax
-    {
-        public AssignmentStatementSyntax(ImmutableArray<PrefixExpressionSyntax> variables, ImmutableArray<ExpressionSyntax> values, in SequenceRange location) : base(location)
-        {
-            Variables = variables;
-            Values = values;
-        }
-
-        public ImmutableArray<PrefixExpressionSyntax> Variables { get; }
-        public ImmutableArray<ExpressionSyntax> Values { get; }
-    }
+    public sealed record AssignmentStatementSyntax(ImmutableArray<PrefixExpressionSyntax> Variables, ImmutableArray<ExpressionSyntax> Values, in SequenceRange Location) : StatementSyntax(Location);
 }

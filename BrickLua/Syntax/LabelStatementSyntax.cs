@@ -19,13 +19,5 @@
 
 namespace BrickLua.Syntax
 {
-    public sealed class LabelStatementSyntax : StatementSyntax
-    {
-        public LabelStatementSyntax(SyntaxToken name, in SequenceRange location) : base(location)
-        {
-            Name = name;
-        }
-
-        public SyntaxToken Name { get; }
-    }
+    public sealed record LabelStatementSyntax(SyntaxToken Name, in SequenceRange Location) : StatementSyntax(Location);
 }

@@ -19,10 +19,5 @@
 
 namespace BrickLua.Syntax
 {
-    public abstract class ExpressionSyntax : StatementSyntax
-    {
-        protected ExpressionSyntax(in SequenceRange location) : base(location)
-        {
-        }
-    }
+    public abstract record ExpressionSyntax(in SequenceRange Location) : StatementSyntax(Location);
 }

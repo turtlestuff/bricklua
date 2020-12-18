@@ -21,17 +21,5 @@ using System.Collections.Immutable;
 
 namespace BrickLua.Syntax
 {
-    public sealed class ForStatementSyntax : StatementSyntax
-    {
-        public ForStatementSyntax(ImmutableArray<SyntaxToken> nameList, ImmutableArray<ExpressionSyntax> expressionList, BlockSyntax body, in SequenceRange location) : base(location)
-        {
-            NameList = nameList;
-            ExpressionList = expressionList;
-            Body = body;
-        }
-
-        public ImmutableArray<SyntaxToken> NameList { get; }
-        public ImmutableArray<ExpressionSyntax> ExpressionList { get; }
-        public BlockSyntax Body { get; }
-    }
+    public sealed record ForStatementSyntax(ImmutableArray<SyntaxToken> NameList, ImmutableArray<ExpressionSyntax> ExpressionList, BlockSyntax Body, in SequenceRange Location) : StatementSyntax(Location);
 }

@@ -19,15 +19,5 @@
 
 namespace BrickLua.Syntax
 {
-    public sealed class LocalFunctionStatementSyntax : StatementSyntax
-    {
-        public LocalFunctionStatementSyntax(SyntaxToken name, FunctionBody body, in SequenceRange location) : base(location)
-        {
-            Name = name;
-            Body = body;
-        }
-
-        public SyntaxToken Name { get; }
-        public FunctionBody Body { get; }
-    }
+    public sealed record LocalFunctionStatementSyntax(SyntaxToken Name, FunctionBody Body, in SequenceRange Location) : StatementSyntax(Location);
 }

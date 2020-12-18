@@ -21,13 +21,5 @@ using System.Collections.Immutable;
 
 namespace BrickLua.Syntax
 {
-    public class ReturnStatementSyntax : StatementSyntax
-    {
-        public ReturnStatementSyntax(ImmutableArray<ExpressionSyntax> returnValues, in SequenceRange location) : base(location)
-        {
-            ReturnValues = returnValues;
-        }
-
-        public ImmutableArray<ExpressionSyntax> ReturnValues { get; }
-    }
+    public record ReturnStatementSyntax(ImmutableArray<ExpressionSyntax> ReturnValues, in SequenceRange Location) : StatementSyntax(Location);
 }

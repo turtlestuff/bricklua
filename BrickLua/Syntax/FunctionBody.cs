@@ -21,18 +21,5 @@ using System.Collections.Immutable;
 
 namespace BrickLua.Syntax
 {
-    public sealed class FunctionBody
-    {
-        public FunctionBody(ImmutableArray<SyntaxToken> parameterNames, bool isVararg, BlockSyntax body)
-        {
-            ParameterNames = parameterNames;
-            IsVararg = isVararg;
-            Body = body;
-        }
-
-        public ImmutableArray<SyntaxToken> ParameterNames { get; }
-        public bool IsVararg { get; }
-
-        public BlockSyntax Body { get; }
-    }
+    public sealed record FunctionBody(ImmutableArray<SyntaxToken> ParameterNames, bool IsVararg, BlockSyntax Body);
 }

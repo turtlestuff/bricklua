@@ -19,15 +19,5 @@
 
 namespace BrickLua.Syntax
 {
-    public sealed class IndexExpressionSyntax : PrefixExpressionSyntax
-    {
-        public IndexExpressionSyntax(PrefixExpressionSyntax indexedExpression, ExpressionSyntax indexArgument, in SequenceRange location) : base(location)
-        {
-            IndexedExpression = indexedExpression;
-            IndexArgument = indexArgument;
-        }
-
-        public PrefixExpressionSyntax IndexedExpression { get; }
-        public ExpressionSyntax IndexArgument { get; }
-    }
+    public sealed record IndexExpressionSyntax(PrefixExpressionSyntax IndexedExpression, ExpressionSyntax IndexArgument, in SequenceRange Location) : PrefixExpressionSyntax(Location);
 }

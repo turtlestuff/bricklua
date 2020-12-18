@@ -221,7 +221,7 @@ namespace BrickLua.Syntax
         SyntaxToken LexIdentifier()
         {
             reader.Advance(1);
-            reader.AdvancePastAny("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_");
+            reader.AdvancePastAny("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890_");
             var str = reader.Sequence.Slice(tokenStart, reader.Position);
 
             SyntaxKind type = SyntaxKind.Name;

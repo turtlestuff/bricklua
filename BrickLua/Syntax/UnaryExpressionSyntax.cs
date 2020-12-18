@@ -19,16 +19,6 @@
 
 namespace BrickLua.Syntax
 {
-    public sealed class UnaryExpressionSyntax : ExpressionSyntax
-    {
-        public UnaryExpressionSyntax(SyntaxKind @operator, ExpressionSyntax operand, in SequenceRange location) : base(location)
-        {
-            Operator = @operator;
-            Operand = operand;
-        }
-
-        public SyntaxKind Operator { get; }
-        public ExpressionSyntax Operand { get; }
-    }
+    public sealed record UnaryExpressionSyntax(SyntaxKind Operator, ExpressionSyntax Operand, in SequenceRange Location) : ExpressionSyntax(Location);
 
 }

@@ -19,11 +19,5 @@
 
 namespace BrickLua.Syntax
 {
-    public abstract class PrefixExpressionSyntax : ExpressionSyntax
-    {
-        protected PrefixExpressionSyntax(in SequenceRange location) : base(location)
-        {
-        }
-    }
-
+    public abstract record PrefixExpressionSyntax(in SequenceRange Location) : ExpressionSyntax(Location);
 }

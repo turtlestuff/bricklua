@@ -25,19 +25,14 @@ using System.Reflection;
 
 namespace BrickLua.Syntax
 {
-    public abstract class SyntaxNode
+
+    public abstract record SyntaxNode(in SequenceRange Location)
     {
-        protected SyntaxNode(in SequenceRange location)
-        {
-            Location = location;
-        }
-
-        public SequenceRange Location { get; }
-
         public void WriteTo(TextWriter writer)
         {
             PrettyPrint(writer, this);
         }
+
 
         static void PrettyPrint(TextWriter writer, SyntaxNode node, string indent = "", bool isLast = true)
         {

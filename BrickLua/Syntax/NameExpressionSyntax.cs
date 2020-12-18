@@ -19,14 +19,5 @@
 
 namespace BrickLua.Syntax
 {
-    public class NameExpressionSyntax : PrefixExpressionSyntax
-    {
-        public NameExpressionSyntax(SyntaxToken name, in SequenceRange location) : base(location)
-        {
-            Name = name;
-        }
-
-        public SyntaxToken Name { get; }
-    }
-
+    public record NameExpressionSyntax(SyntaxToken Name, in SequenceRange Location) : PrefixExpressionSyntax(Location);
 }
