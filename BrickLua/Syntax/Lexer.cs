@@ -92,11 +92,12 @@ namespace BrickLua.Syntax
                 case '>':
                     return LexDoubleChoiceOperator('=', '>', SyntaxKind.Greater, SyntaxKind.GreaterEquals, SyntaxKind.GreaterGreater);
 
+                case '\'':
                 case '"':
                     reader.Advance(1);
                     var strStart = reader.Consumed;
 
-                    if (!reader.TryReadTo(sequence: out var seq, '"'))
+                    if (!reader.TryReadTo(sequence: out var seq, ch, '\\'))
                     {
                         reader.AdvanceToEnd();
                         seq = reader.UnreadSequence;
@@ -243,7 +244,6 @@ namespace BrickLua.Syntax
             {
                 return token;
             }
-
 
             throw new NotImplementedException("This type of literal is not supported");
         }
