@@ -1,4 +1,4 @@
-﻿//  
+﻿//
 //  Copyright (C) 2020 John Tur
 //  
 //  This file is part of BrickLua, a simple Lua 5.4 CIL compiler.
@@ -9,7 +9,7 @@
 //  (at your option) any later version.
 //  
 //  BrickLua is distributed in the hope that it will be useful,
-//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  but WITHOUT ANY WARRANTY, without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 //  GNU Lesser General Public License for more details.
 //  
@@ -17,9 +17,9 @@
 //  along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-using BrickLua.Syntax;
+using BrickLua.CodeAnalysis.Syntax;
 
-namespace BrickLua
+namespace BrickLua.CodeAnalysis
 {
     public sealed record Diagnostic(in SequenceRange Location, string Message)
     {

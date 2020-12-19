@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <Nullable>enable</Nullable>
+        <OutputType>Exe</OutputType> 
+        <TargetFramework>net5.0</TargetFramework>
+        <RootNamespace>BrickLua.Interactive</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\BrickLua\BrickLua.CodeAnalysis.csproj" />
+    </ItemGroup>
+
+</Project>

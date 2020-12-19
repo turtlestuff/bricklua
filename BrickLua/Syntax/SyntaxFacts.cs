@@ -1,4 +1,4 @@
-﻿//  
+﻿//
 //  Copyright (C) 2020 John Tur
 //  
 //  This file is part of BrickLua, a simple Lua 5.4 CIL compiler.
@@ -9,7 +9,7 @@
 //  (at your option) any later version.
 //  
 //  BrickLua is distributed in the hope that it will be useful,
-//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  but WITHOUT ANY WARRANTY, without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 //  GNU Lesser General Public License for more details.
 //  
@@ -20,7 +20,7 @@
 using System;
 using System.Globalization;
 
-namespace BrickLua.Syntax
+namespace BrickLua.CodeAnalysis.Syntax
 {
     public static class SyntaxFacts
     {

@@ -1,4 +1,4 @@
-﻿//  
+﻿//
 //  Copyright (C) 2020 John Tur
 //  
 //  This file is part of BrickLua, a simple Lua 5.4 CIL compiler.
@@ -9,7 +9,7 @@
 //  (at your option) any later version.
 //  
 //  BrickLua is distributed in the hope that it will be useful,
-//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  but WITHOUT ANY WARRANTY, without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 //  GNU Lesser General Public License for more details.
 //  
@@ -20,7 +20,7 @@
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 
-namespace BrickLua.Syntax
+namespace BrickLua.CodeAnalysis.Syntax
 {
     public ref struct Parser
     {
@@ -122,7 +122,7 @@ namespace BrickLua.Syntax
 
         static SequenceRange From(SyntaxNode first, SyntaxNode last) => new(first.Location.Start, last.Location.End);
 
-        static SyntaxNode GetLast<TNode>(ImmutableArray<TNode> node, SyntaxNode last) where TNode : SyntaxNode 
+        static SyntaxNode GetLast<TNode>(ImmutableArray<TNode> node, SyntaxNode last) where TNode : SyntaxNode
             => node.IsDefaultOrEmpty ? last : node[^1];
 
         public ChunkSyntax ParseChunk()
@@ -761,7 +761,7 @@ namespace BrickLua.Syntax
         exit:
 
             var clauses = elseIfClauses.ToImmutable();
-            return new IfStatementSyntax(expr, body, clauses, elseClause, 
+            return new IfStatementSyntax(expr, body, clauses, elseClause,
                 From(@if, elseClause ?? GetLast(clauses, GetLast(body.Body, then))));
         }
 

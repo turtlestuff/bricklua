@@ -1,4 +1,4 @@
-﻿//  
+﻿//
 //  Copyright (C) 2020 John Tur
 //  
 //  This file is part of BrickLua, a simple Lua 5.4 CIL compiler.
@@ -9,7 +9,7 @@
 //  (at your option) any later version.
 //  
 //  BrickLua is distributed in the hope that it will be useful,
-//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  but WITHOUT ANY WARRANTY, without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 //  GNU Lesser General Public License for more details.
 //  
@@ -17,15 +17,13 @@
 //  along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-using BrickLua.Syntax;
-
 using System;
 using System.Buffers;
 
-namespace BrickLua.Console
-{
-    using Console = System.Console;
+using BrickLua.CodeAnalysis.Syntax;
 
+namespace BrickLua.Interactive
+{
     class Program
     {
         static void Main(string[] args)
@@ -67,7 +65,7 @@ namespace BrickLua.Console
 
                     var underlineLength = text.Slice(location.Start, location.End).Length;
                     var padLength = text.Slice(startPos, location.Start).Length + underlineLength;
-                    Console.WriteLine($"{new string('~', (int)underlineLength).PadLeft((int)padLength)}");
+                    Console.WriteLine($"{new string('~', (int) underlineLength).PadLeft((int) padLength)}");
                 }
             }
         }

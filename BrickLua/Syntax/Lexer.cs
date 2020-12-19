@@ -1,4 +1,4 @@
-﻿//  
+﻿//
 //  Copyright (C) 2020 John Tur
 //  
 //  This file is part of BrickLua, a simple Lua 5.4 CIL compiler.
@@ -9,7 +9,7 @@
 //  (at your option) any later version.
 //  
 //  BrickLua is distributed in the hope that it will be useful,
-//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  but WITHOUT ANY WARRANTY, without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 //  GNU Lesser General Public License for more details.
 //  
@@ -24,7 +24,7 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace BrickLua.Syntax
+namespace BrickLua.CodeAnalysis.Syntax
 {
     public ref struct Lexer
     {
@@ -51,13 +51,13 @@ namespace BrickLua.Syntax
 
             switch (ch)
             {
-                case '+': 
+                case '+':
                     return LexSingleOperator(SyntaxKind.Plus);
                 case '*':
                     return LexSingleOperator(SyntaxKind.Asterisk);
-                case '%': 
+                case '%':
                     return LexSingleOperator(SyntaxKind.Asterisk);
-                case '^': 
+                case '^':
                     return LexSingleOperator(SyntaxKind.Caret);
                 case '#':
                     return LexSingleOperator(SyntaxKind.Hash);
@@ -73,13 +73,13 @@ namespace BrickLua.Syntax
                     return LexSingleOperator(SyntaxKind.OpenBrace);
                 case '}':
                     return LexSingleOperator(SyntaxKind.CloseBrace);
-                case ']': 
+                case ']':
                     return LexSingleOperator(SyntaxKind.CloseBracket);
-                case ':': 
+                case ':':
                     return LexDoubleOperator(':', SyntaxKind.Colon, SyntaxKind.ColonColon);
-                case ';': 
+                case ';':
                     return LexSingleOperator(SyntaxKind.Semicolon);
-                case ',': 
+                case ',':
                     return LexSingleOperator(SyntaxKind.Comma);
                 case '/':
                     return LexDoubleOperator('/', SyntaxKind.Slash, SyntaxKind.SlashSlash);
@@ -211,9 +211,9 @@ namespace BrickLua.Syntax
                 Diagnostics.ReportUnterminatedLongString(new SequenceRange(tokenStart, reader.Sequence.End));
 
                 return new SyntaxToken(SyntaxKind.LiteralString,
-                    UnescapeStringLiteral(reader.Sequence.Slice(startString), true, startIndex), 
+                    UnescapeStringLiteral(reader.Sequence.Slice(startString), true, startIndex),
                     new SequenceRange(tokenStart, reader.Sequence.End));
-            }   
+            }
 
             return new SyntaxToken(SyntaxKind.LiteralString, UnescapeStringLiteral(literal, true, startIndex), Current);
         }
@@ -371,9 +371,9 @@ namespace BrickLua.Syntax
 
         ReadOnlyMemory<char> UnescapeStringLiteral(in ReadOnlySequence<char> literal, bool multiLine, long startIndex)
         {
-            var buffer = new ArrayBufferWriter<char>(checked((int)literal.Length));
+            var buffer = new ArrayBufferWriter<char>(checked((int) literal.Length));
 
-            var reader = new SequenceReader<char>(literal); 
+            var reader = new SequenceReader<char>(literal);
 
             if (multiLine)
             {
@@ -387,7 +387,7 @@ namespace BrickLua.Syntax
                 {
                     buffer.Write(memory.Span);
                 }
-                
+
                 if (!reader.TryRead(out var escapeSequence))
                 {
                     break;
