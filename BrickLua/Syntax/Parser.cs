@@ -24,10 +24,10 @@ namespace BrickLua.CodeAnalysis.Syntax
 {
     public ref struct Parser
     {
-        SyntaxToken current;
-        SyntaxToken? peek;
+        private SyntaxToken current;
+        private SyntaxToken? peek;
 
-        Lexer lexer;
+        private Lexer lexer;
 
         public DiagnosticBag Diagnostics { get; }
 
@@ -44,7 +44,7 @@ namespace BrickLua.CodeAnalysis.Syntax
             var current = this.current;
             this.current = peek ?? lexer.Lex();
 
-            if (peek is { })
+            if (peek is not null)
                 peek = null;
 
             return current;

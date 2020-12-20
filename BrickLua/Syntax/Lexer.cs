@@ -28,8 +28,8 @@ namespace BrickLua.CodeAnalysis.Syntax
 {
     public ref struct Lexer
     {
-        SequenceReader<char> reader;
-        SequencePosition tokenStart;
+        private SequenceReader<char> reader;
+        private SequencePosition tokenStart;
 
         public DiagnosticBag Diagnostics { get; }
 
