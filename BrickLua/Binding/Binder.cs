@@ -76,7 +76,7 @@ namespace BrickLua.CodeAnalysis.Binding
             var boundOperand = BindExpression(syntax.Operand);
             var boundOperator = BoundUnaryOperator.Bind(syntax.Operator);
 
-            if (boundOperator == null)
+            if (boundOperator is null)
             {
                 // Diagnostic
                 return boundOperand;
@@ -91,7 +91,7 @@ namespace BrickLua.CodeAnalysis.Binding
             var boundRight = BindExpression(syntax.Right);
             var boundOperator = BoundBinaryOperator.Bind(syntax.Operator);
 
-            if (boundOperator == null)
+            if (boundOperator is null)
             {
                 // Diagnostic
                 return boundLeft;
