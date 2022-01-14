@@ -17,7 +17,6 @@ insert_final_newline = false
 # Organize usings
 dotnet_separate_import_directive_groups = true
 dotnet_sort_system_directives_first = true
-file_header_template =  \n Copyright (C) 2020 John Tur\n \n This file is part of BrickLua, a simple Lua 5.4 CIL compiler.\n \n BrickLua is free software: you can redistribute it and/or modify\n it under the terms of the GNU Lesser General Public License as published by\n the Free Software Foundation, either version 3 of the License, or\n (at your option) any later version.\n \n BrickLua is distributed in the hope that it will be useful,\n but WITHOUT ANY WARRANTY, without even the implied warranty of\n MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n GNU Lesser General Public License for more details.\n \n You should have received a copy of the GNU Lesser General Public License\n along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.\n 
 
 # this. and Me. preferences
 dotnet_style_qualification_for_event = false:silent
