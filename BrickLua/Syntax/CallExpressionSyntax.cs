@@ -19,8 +19,6 @@
 
 using System.Collections.Immutable;
 
-namespace BrickLua.CodeAnalysis.Syntax
-{
-    public sealed record CallExpressionSyntax(PrefixExpressionSyntax CalledExpression, SyntaxToken? Name, ImmutableArray<ExpressionSyntax> Arguments, in SequenceRange Location) : PrefixExpressionSyntax(Location);
+namespace BrickLua.CodeAnalysis.Syntax;
 
-}
+public sealed record CallExpressionSyntax(PrefixExpressionSyntax CalledExpression, SyntaxToken? Name, ImmutableArray<ExpressionSyntax> Arguments, in SequenceRange Location) : PrefixExpressionSyntax(Location);

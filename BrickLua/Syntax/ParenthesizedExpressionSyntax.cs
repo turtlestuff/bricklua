@@ -17,7 +17,6 @@
 //  along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-namespace BrickLua.CodeAnalysis.Syntax
-{
-    public sealed record ParenthesizedExpressionSyntax(ExpressionSyntax Expression, in SequenceRange Location) : PrefixExpressionSyntax(Location);
-}
+namespace BrickLua.CodeAnalysis.Syntax;
+
+public sealed record ParenthesizedExpressionSyntax(ExpressionSyntax Expression, in SequenceRange Location) : PrefixExpressionSyntax(Location);

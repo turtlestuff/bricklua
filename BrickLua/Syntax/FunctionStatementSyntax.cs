@@ -19,9 +19,8 @@
 
 using System.Collections.Immutable;
 
-namespace BrickLua.CodeAnalysis.Syntax
-{
-    public sealed record FunctionStatementSyntax(FunctionName Name, FunctionBody Body, in SequenceRange Location) : StatementSyntax(Location);
+namespace BrickLua.CodeAnalysis.Syntax;
 
-    public sealed record FunctionName(ImmutableArray<SyntaxToken> DottedNames, SyntaxToken? FieldName);
-}
+public sealed record FunctionStatementSyntax(FunctionName Name, FunctionBody Body, in SequenceRange Location) : StatementSyntax(Location);
+
+public sealed record FunctionName(ImmutableArray<SyntaxToken> DottedNames, SyntaxToken? FieldName);

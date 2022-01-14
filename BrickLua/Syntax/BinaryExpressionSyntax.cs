@@ -17,7 +17,6 @@
 //  along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-namespace BrickLua.CodeAnalysis.Syntax
-{
-    public sealed record BinaryExpressionSyntax(ExpressionSyntax Left, SyntaxKind Operator, ExpressionSyntax Right, in SequenceRange Location) : ExpressionSyntax(Location);
-}
+namespace BrickLua.CodeAnalysis.Syntax;
+
+public sealed record BinaryExpressionSyntax(ExpressionSyntax Left, SyntaxKind Operator, ExpressionSyntax Right, in SequenceRange Location) : ExpressionSyntax(Location);

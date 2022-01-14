@@ -17,7 +17,6 @@
 //  along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-namespace BrickLua.CodeAnalysis.Symbols
-{
-    public sealed record VariableSymbol(string Name, bool IsConst = false, bool IsToBeClosed = false);
-}
+namespace BrickLua.CodeAnalysis.Symbols;
+
+public sealed record VariableSymbol(string Name, bool IsConst = false, bool IsToBeClosed = false);

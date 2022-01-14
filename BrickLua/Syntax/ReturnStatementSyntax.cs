@@ -19,7 +19,6 @@
 
 using System.Collections.Immutable;
 
-namespace BrickLua.CodeAnalysis.Syntax
-{
-    public record ReturnStatementSyntax(ImmutableArray<ExpressionSyntax> ReturnValues, in SequenceRange Location) : StatementSyntax(Location);
-}
+namespace BrickLua.CodeAnalysis.Syntax;
+
+public record ReturnStatementSyntax(ImmutableArray<ExpressionSyntax> ReturnValues, in SequenceRange Location) : StatementSyntax(Location);

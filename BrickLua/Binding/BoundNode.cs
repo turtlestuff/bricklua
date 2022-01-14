@@ -17,7 +17,6 @@
 //  along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-namespace BrickLua.CodeAnalysis.Binding
-{
-    internal abstract record BoundNode;
-}
+namespace BrickLua.CodeAnalysis.Binding;
+
+internal abstract record BoundNode;

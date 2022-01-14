@@ -17,7 +17,6 @@
 //  along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-namespace BrickLua.CodeAnalysis.Syntax
-{
-    public sealed record NumericalForStatementSyntax(SyntaxToken InitialValueIdentifier, ExpressionSyntax InitialValue, ExpressionSyntax Limit, ExpressionSyntax? Step, BlockSyntax Body, in SequenceRange Location) : StatementSyntax(Location);
-}
+namespace BrickLua.CodeAnalysis.Syntax;
+
+public sealed record NumericalForStatementSyntax(SyntaxToken InitialValueIdentifier, ExpressionSyntax InitialValue, ExpressionSyntax Limit, ExpressionSyntax? Step, BlockSyntax Body, in SequenceRange Location) : StatementSyntax(Location);

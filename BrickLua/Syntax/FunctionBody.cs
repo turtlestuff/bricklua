@@ -19,7 +19,6 @@
 
 using System.Collections.Immutable;
 
-namespace BrickLua.CodeAnalysis.Syntax
-{
-    public sealed record FunctionBody(ImmutableArray<SyntaxToken> ParameterNames, bool IsVararg, BlockSyntax Body);
-}
+namespace BrickLua.CodeAnalysis.Syntax;
+
+public sealed record FunctionBody(ImmutableArray<SyntaxToken> ParameterNames, bool IsVararg, BlockSyntax Body);

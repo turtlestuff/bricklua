@@ -17,30 +17,28 @@
 //  along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-namespace BrickLua.CodeAnalysis.Binding
-{
-    internal enum BoundBinaryOperatorKind
-    {
-        LogicalOr,
-        LogicalAnd,
-        LessThan,
-        LessThanOrEqualTo,
-        GreaterThanOrEqualTo,
-        NotEqualTo,
-        EqualTo,
-        BitwiseOr,
-        BitwiseXor,
-        BitwiseAnd,
-        ShiftLeft,
-        ShiftRight,
-        Concatenation,
-        Addition,
-        Subtraction,
-        Multiplication,
-        FloatDivision,
-        FloorDivision,
-        Modulus,
-        Exponentiation
-    }
+namespace BrickLua.CodeAnalysis.Binding;
 
+internal enum BoundBinaryOperatorKind
+{
+    LogicalOr,
+    LogicalAnd,
+    LessThan,
+    LessThanOrEqualTo,
+    GreaterThanOrEqualTo,
+    NotEqualTo,
+    EqualTo,
+    BitwiseOr,
+    BitwiseXor,
+    BitwiseAnd,
+    ShiftLeft,
+    ShiftRight,
+    Concatenation,
+    Addition,
+    Subtraction,
+    Multiplication,
+    FloatDivision,
+    FloorDivision,
+    Modulus,
+    Exponentiation
 }

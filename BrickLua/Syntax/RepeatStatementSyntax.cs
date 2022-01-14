@@ -17,7 +17,6 @@
 //  along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-namespace BrickLua.CodeAnalysis.Syntax
-{
-    public sealed record RepeatStatementSyntax(BlockSyntax Body, ExpressionSyntax Condition, in SequenceRange Location) : StatementSyntax(Location);
-}
+namespace BrickLua.CodeAnalysis.Syntax;
+
+public sealed record RepeatStatementSyntax(BlockSyntax Body, ExpressionSyntax Condition, in SequenceRange Location) : StatementSyntax(Location);

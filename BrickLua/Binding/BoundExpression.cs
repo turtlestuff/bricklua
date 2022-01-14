@@ -17,9 +17,8 @@
 //  along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-namespace BrickLua.CodeAnalysis.Binding
-{
-    internal abstract record BoundExpression : BoundNode;
+namespace BrickLua.CodeAnalysis.Binding;
 
-    internal sealed record BoundLiteralExpression(object Value) : BoundExpression;
-}
+internal abstract record BoundExpression : BoundNode;
+
+internal sealed record BoundLiteralExpression(object Value) : BoundExpression;

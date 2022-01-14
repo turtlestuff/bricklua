@@ -19,10 +19,9 @@
 
 using BrickLua.CodeAnalysis.Syntax;
 
-namespace BrickLua.CodeAnalysis
+namespace BrickLua.CodeAnalysis;
+
+public sealed record Diagnostic(in SequenceRange Location, string Message)
 {
-    public sealed record Diagnostic(in SequenceRange Location, string Message)
-    {
-        public override string ToString() => Message;
-    }
+    public override string ToString() => Message;
 }

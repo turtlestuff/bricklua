@@ -19,12 +19,12 @@
 
 using BrickLua.CodeAnalysis.Syntax;
 
-namespace BrickLua.CodeAnalysis.Binding
+namespace BrickLua.CodeAnalysis.Binding;
+
+internal sealed record BoundBinaryOperator(BoundBinaryOperatorKind Kind, SyntaxKind SyntaxKind)
 {
-    internal sealed record BoundBinaryOperator(BoundBinaryOperatorKind Kind, SyntaxKind SyntaxKind)
+    private static readonly BoundBinaryOperator[] operators =
     {
-        private static readonly BoundBinaryOperator[] operators =
-        {
             new BoundBinaryOperator(BoundBinaryOperatorKind.LogicalOr, SyntaxKind.Or),
             new BoundBinaryOperator(BoundBinaryOperatorKind.LogicalAnd, SyntaxKind.And),
             new BoundBinaryOperator(BoundBinaryOperatorKind.LessThan, SyntaxKind.Less),
@@ -49,16 +49,14 @@ namespace BrickLua.CodeAnalysis.Binding
 
         };
 
-        public static BoundBinaryOperator? Bind(SyntaxKind syntaxKind)
+    public static BoundBinaryOperator? Bind(SyntaxKind syntaxKind)
+    {
+        foreach (var op in operators)
         {
-            foreach (var op in operators)
-            {
-                if (op.SyntaxKind == syntaxKind)
-                    return op;
-            }
-
-            return null;
+            if (op.SyntaxKind == syntaxKind)
+                return op;
         }
-    }
 
+        return null;
+    }
 }

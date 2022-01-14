@@ -17,7 +17,6 @@
 //  along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-namespace BrickLua.CodeAnalysis.Syntax
-{
-    public sealed record LabelStatementSyntax(SyntaxToken Name, in SequenceRange Location) : StatementSyntax(Location);
-}
+namespace BrickLua.CodeAnalysis.Syntax;
+
+public sealed record LabelStatementSyntax(SyntaxToken Name, in SequenceRange Location) : StatementSyntax(Location);

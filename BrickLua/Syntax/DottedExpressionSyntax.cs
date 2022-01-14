@@ -19,7 +19,6 @@
 
 using System.Collections.Immutable;
 
-namespace BrickLua.CodeAnalysis.Syntax
-{
-    public sealed record DottedExpressionSyntax(ImmutableArray<PrefixExpressionSyntax> DottedExpressions, in SequenceRange Location) : PrefixExpressionSyntax(Location);
-}
+namespace BrickLua.CodeAnalysis.Syntax;
+
+public sealed record DottedExpressionSyntax(ImmutableArray<PrefixExpressionSyntax> DottedExpressions, in SequenceRange Location) : PrefixExpressionSyntax(Location);

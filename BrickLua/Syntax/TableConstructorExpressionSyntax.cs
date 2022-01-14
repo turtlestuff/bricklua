@@ -19,9 +19,8 @@
 
 using System.Collections.Immutable;
 
-namespace BrickLua.CodeAnalysis.Syntax
-{
-    public sealed record TableConstructorExpressionSyntax(ImmutableArray<FieldAssignmentExpressionSyntax> FieldAssignments, in SequenceRange Location) : ExpressionSyntax(Location);
+namespace BrickLua.CodeAnalysis.Syntax;
 
-    public sealed record FieldAssignmentExpressionSyntax(SyntaxNode Field, ExpressionSyntax? Value, in SequenceRange Location) : ExpressionSyntax(Location);
-}
+public sealed record TableConstructorExpressionSyntax(ImmutableArray<FieldAssignmentExpressionSyntax> FieldAssignments, in SequenceRange Location) : ExpressionSyntax(Location);
+
+public sealed record FieldAssignmentExpressionSyntax(SyntaxNode Field, ExpressionSyntax? Value, in SequenceRange Location) : ExpressionSyntax(Location);

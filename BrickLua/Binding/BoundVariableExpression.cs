@@ -19,7 +19,6 @@
 
 using BrickLua.CodeAnalysis.Symbols;
 
-namespace BrickLua.CodeAnalysis.Binding
-{
-    internal sealed record BoundVariableExpression(VariableSymbol Variable) : BoundExpression;
-}
+namespace BrickLua.CodeAnalysis.Binding;
+
+internal sealed record BoundVariableExpression(VariableSymbol Variable) : BoundExpression;

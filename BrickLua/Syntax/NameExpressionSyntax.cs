@@ -17,7 +17,6 @@
 //  along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-namespace BrickLua.CodeAnalysis.Syntax
-{
-    public record NameExpressionSyntax(SyntaxToken Name, in SequenceRange Location) : PrefixExpressionSyntax(Location);
-}
+namespace BrickLua.CodeAnalysis.Syntax;
+
+public record NameExpressionSyntax(SyntaxToken Name, in SequenceRange Location) : PrefixExpressionSyntax(Location);

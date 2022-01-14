@@ -19,7 +19,6 @@
 
 using System.Collections.Immutable;
 
-namespace BrickLua.CodeAnalysis.Syntax
-{
-    public sealed record ForStatementSyntax(ImmutableArray<SyntaxToken> NameList, ImmutableArray<ExpressionSyntax> ExpressionList, BlockSyntax Body, in SequenceRange Location) : StatementSyntax(Location);
-}
+namespace BrickLua.CodeAnalysis.Syntax;
+
+public sealed record ForStatementSyntax(ImmutableArray<SyntaxToken> NameList, ImmutableArray<ExpressionSyntax> ExpressionList, BlockSyntax Body, in SequenceRange Location) : StatementSyntax(Location);

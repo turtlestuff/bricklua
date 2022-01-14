@@ -19,7 +19,6 @@
 
 using System.Collections.Immutable;
 
-namespace BrickLua.CodeAnalysis.Syntax
-{
-    public sealed record AssignmentStatementSyntax(ImmutableArray<PrefixExpressionSyntax> Variables, ImmutableArray<ExpressionSyntax> Values, in SequenceRange Location) : StatementSyntax(Location);
-}
+namespace BrickLua.CodeAnalysis.Syntax;
+
+public sealed record AssignmentStatementSyntax(ImmutableArray<PrefixExpressionSyntax> Variables, ImmutableArray<ExpressionSyntax> Values, in SequenceRange Location) : StatementSyntax(Location);

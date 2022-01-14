@@ -19,8 +19,7 @@
 
 using System.Collections.Immutable;
 
-namespace BrickLua.CodeAnalysis.Syntax
-{
-    public record IfStatementSyntax(ExpressionSyntax Condition, BlockSyntax Consequent, ImmutableArray<ElseIfClauseSyntax> ElseIfClauses, ElseClauseSyntax? ElseClause, in
+namespace BrickLua.CodeAnalysis.Syntax;
+
+public record IfStatementSyntax(ExpressionSyntax Condition, BlockSyntax Consequent, ImmutableArray<ElseIfClauseSyntax> ElseIfClauses, ElseClauseSyntax? ElseClause, in
 SequenceRange Location) : StatementSyntax(Location);
-}

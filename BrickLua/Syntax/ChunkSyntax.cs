@@ -17,7 +17,6 @@
 //  along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-namespace BrickLua.CodeAnalysis.Syntax
-{
-    public sealed record ChunkSyntax(BlockSyntax Body, in SequenceRange Location) : SyntaxNode(Location);
-}
+namespace BrickLua.CodeAnalysis.Syntax;
+
+public sealed record ChunkSyntax(BlockSyntax Body, in SequenceRange Location) : SyntaxNode(Location);

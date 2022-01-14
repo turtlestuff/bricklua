@@ -17,8 +17,6 @@
 //  along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-namespace BrickLua.CodeAnalysis.Syntax
-{
-    public sealed record UnaryExpressionSyntax(SyntaxKind Operator, ExpressionSyntax Operand, in SequenceRange Location) : ExpressionSyntax(Location);
+namespace BrickLua.CodeAnalysis.Syntax;
 
-}
+public sealed record UnaryExpressionSyntax(SyntaxKind Operator, ExpressionSyntax Operand, in SequenceRange Location) : ExpressionSyntax(Location);

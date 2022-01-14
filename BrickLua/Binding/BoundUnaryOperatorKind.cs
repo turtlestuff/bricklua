@@ -17,13 +17,12 @@
 //  along with BrickLua.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-namespace BrickLua.CodeAnalysis.Binding
+namespace BrickLua.CodeAnalysis.Binding;
+
+internal enum BoundUnaryOperatorKind
 {
-    internal enum BoundUnaryOperatorKind
-    {
-        Negation,
-        Length,
-        BitwiseNot,
-        LogicalNot
-    }
+    Negation,
+    Length,
+    BitwiseNot,
+    LogicalNot
 }

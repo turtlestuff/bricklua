@@ -19,9 +19,8 @@
 
 using System.Collections.Immutable;
 
-namespace BrickLua.CodeAnalysis.Syntax
-{
-    public sealed record LocalDeclarationStatementSyntax(ImmutableArray<LocalVariableDeclaration> Declarations, ImmutableArray<ExpressionSyntax> Expressions, in SequenceRange Location) : StatementSyntax(Location);
+namespace BrickLua.CodeAnalysis.Syntax;
 
-    public sealed record LocalVariableDeclaration(SyntaxToken Name, SyntaxToken? Attribute);
-}
+public sealed record LocalDeclarationStatementSyntax(ImmutableArray<LocalVariableDeclaration> Declarations, ImmutableArray<ExpressionSyntax> Expressions, in SequenceRange Location) : StatementSyntax(Location);
+
+public sealed record LocalVariableDeclaration(SyntaxToken Name, SyntaxToken? Attribute);
