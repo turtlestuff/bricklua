@@ -58,7 +58,7 @@ public ref struct Parser
         return false;
     }
 
-    bool IsNot(SyntaxKind kind) => current.Kind != kind && current.Kind != SyntaxKind.EndOfFile;
+    readonly bool IsNot(SyntaxKind kind) => current.Kind != kind && current.Kind != SyntaxKind.EndOfFile;
 
     static bool StartsExpression(SyntaxToken token)
     {
@@ -85,10 +85,14 @@ public ref struct Parser
         }
     }
 
-    static bool EndsBlock(SyntaxToken token)
+    bool BlockEnded()
     {
-        switch (token.Kind)
+        switch (current.Kind)
         {
+            case SyntaxKind.Semicolon:
+                // ParseStatement doesn't handle semicolon statements, so we skip over them here.
+                NextToken();
+                return BlockEnded();
             case SyntaxKind.Return:
             case SyntaxKind.EndOfFile:
             case SyntaxKind.End:
@@ -134,7 +138,6 @@ public ref struct Parser
     /// </summary>
     StatementSyntax ParseStatement() => current.Kind switch
     {
-        SyntaxKind.Semicolon => ParseNextStatement(),
         SyntaxKind.Break => ParseBreakStatement(),
         SyntaxKind.Goto => ParseGotoStatement(),
         SyntaxKind.Do => ParseDoStatement(),
@@ -147,12 +150,6 @@ public ref struct Parser
         SyntaxKind.ColonColon => ParseLabelStatement(),
         _ => ParseAssignmentOrCallStatement(),
     };
-
-    StatementSyntax ParseNextStatement()
-    {
-        NextToken();
-        return ParseStatement();
-    }
 
     /// <summary>
     /// Parses an assignment or call statement.
@@ -287,10 +284,10 @@ public ref struct Parser
         //     while <exp> do <block> until
         // the function that parses a while block will be expecting 'end' anyway. Because of that, doing
         // this is OK, and arguably gives better diagnostics in that scenario.
-        while (!EndsBlock(current))
+        while (!BlockEnded())
         {
             var startToken = current;
-
+            
             statements.Add(ParseStatement());
 
             // This helps us get out of infinite loops if ParseStatement didn't consume any tokens.
