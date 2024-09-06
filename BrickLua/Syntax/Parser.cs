@@ -158,8 +158,8 @@ public ref struct Parser
     {
         var expr = ParsePrefixExpression();
 
-        if (expr is CallExpressionSyntax call) return call;
-        if (expr is DottedExpressionSyntax dotted && dotted.DottedExpressions[^1] is CallExpressionSyntax) return dotted;
+        if (expr is CallExpressionSyntax call) return new ExpressionStatementSyntax(call);
+        if (expr is DottedExpressionSyntax dotted && dotted.DottedExpressions[^1] is CallExpressionSyntax) return new ExpressionStatementSyntax(dotted);
 
         return ParseAssignment(expr);
     }
@@ -183,7 +183,7 @@ public ref struct Parser
 
         MatchToken(SyntaxKind.Equals);
         var exprs = ParseExpressionList();
-        return new AssignmentStatementSyntax(vars.ToImmutable(), exprs, From(vars[0], exprs[^1]));
+        return new AssignmentStatementSyntax(vars.DrainToImmutable(), exprs, From(vars[0], exprs[^1]));
 
     }
 
@@ -215,7 +215,7 @@ public ref struct Parser
         } while (CurrentIs(SyntaxKind.Dot, out _));
 
         var fieldName = CurrentIs(SyntaxKind.Colon, out _) ? MatchToken(SyntaxKind.Name) : null;
-        return new FunctionName(builder.ToImmutable(), fieldName);
+        return new FunctionName(builder.DrainToImmutable(), fieldName);
     }
 
     /// <summary>
@@ -267,7 +267,7 @@ public ref struct Parser
 
         } while (CurrentIs(SyntaxKind.Comma, out _));
 
-        return builder.ToImmutable();
+        return builder.DrainToImmutable();
     }
 
     /// <summary>
@@ -295,16 +295,16 @@ public ref struct Parser
                 NextToken();
         }
 
-        ReturnStatementSyntax? @return = null;
+        ReturnSyntax? @return = null;
         if (CurrentIs(SyntaxKind.Return, out var returnToken))
         {
             var returnValues = StartsExpression(current) ? ParseExpressionList() : ImmutableArray<ExpressionSyntax>.Empty;
 
             CurrentIs(SyntaxKind.Semicolon, out var semi);
-            @return = new ReturnStatementSyntax(returnValues, From(returnToken, semi ?? GetLast(returnValues, returnToken)));
+            @return = new ReturnSyntax(returnValues, From(returnToken, semi ?? GetLast(returnValues, returnToken)));
         }
 
-        var statementArr = statements.ToImmutable();
+        var statementArr = statements.DrainToImmutable();
         return new BlockSyntax(statementArr, @return, new SequenceRange(
             statementArr.IsDefaultOrEmpty ? @return?.Location.Start ?? default : statementArr[0].Location.Start,
             @return?.Location.End ?? (statementArr.IsDefaultOrEmpty ? default : statementArr[^1].Location.End)));
@@ -459,7 +459,7 @@ public ref struct Parser
         if (builder.Count == 1)
             return builder[0];
 
-        var seq = builder.ToImmutable();
+        var seq = builder.DrainToImmutable();
         return new DottedExpressionSyntax(seq, From(seq[0], seq[^1]));
     }
 
@@ -497,7 +497,7 @@ public ref struct Parser
     {
         var function = MatchToken(SyntaxKind.Function);
         var body = ParseFunctionBody();
-        return new FunctionExpressionSyntax(body, From(function, body.Body));
+        return new(body, From(function, body.Body));
     }
 
     /// <summary>
@@ -548,7 +548,7 @@ public ref struct Parser
 
         var end = MatchToken(SyntaxKind.CloseBrace);
 
-        return new TableConstructorExpressionSyntax(statements.ToImmutable(), From(start, end));
+        return new(statements.DrainToImmutable(), From(start, end));
     }
 
     /// <summary>
@@ -620,7 +620,7 @@ public ref struct Parser
             statements.Add(NextToken());
         }
 
-        return statements.ToImmutable();
+        return statements.DrainToImmutable();
     }
 
     /// <summary>
@@ -636,7 +636,7 @@ public ref struct Parser
             statements.Add(ParseExpression());
         } while (CurrentIs(SyntaxKind.Comma, out _));
 
-        return statements.ToImmutable();
+        return statements.DrainToImmutable();
     }
 
     /// <summary>
@@ -738,7 +738,7 @@ public ref struct Parser
 
     exit:
 
-        var clauses = elseIfClauses.ToImmutable();
+        var clauses = elseIfClauses.DrainToImmutable();
         return new IfStatementSyntax(expr, body, clauses, elseClause,
             From(@if, elseClause ?? GetLast(clauses, GetLast(body.Body, then))));
     }

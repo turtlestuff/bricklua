@@ -1,8 +1,22 @@
-﻿using BrickLua.CodeAnalysis.Symbols;
+﻿using System.Collections.Immutable;
+
+using BrickLua.CodeAnalysis.Symbols;
 
 namespace BrickLua.CodeAnalysis.Binding;
 
 internal abstract record BoundNode;
+
+internal sealed record BoundChunk(BoundBlock Body) : BoundNode;
+
+internal sealed record BoundBlock(ImmutableArray<BoundStatement> Statements) : BoundNode;
+
+internal abstract record BoundStatement : BoundNode;
+
+internal sealed record BoundExpressionStatement(BoundExpression Expression) : BoundStatement;
+
+internal sealed record BoundIndexExpression(BoundExpression PrefixExpression, BoundExpression Argument) : BoundExpression;
+
+internal sealed record BoundCallExpression(BoundExpression PrefixExpression, ImmutableArray<BoundExpression> Arguments) : BoundExpression;
 
 internal abstract record BoundExpression : BoundNode;
 

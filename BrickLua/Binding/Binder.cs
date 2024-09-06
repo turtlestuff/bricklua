@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 using BrickLua.CodeAnalysis.Symbols;
 using BrickLua.CodeAnalysis.Syntax;
 
@@ -5,13 +7,44 @@ namespace BrickLua.CodeAnalysis.Binding;
 
 internal sealed class Binder
 {
-    private readonly Dictionary<VariableSymbol, object> variables;
-    private readonly DiagnosticBag diagnostics;
+    private BoundScope scope;
 
-    public Binder(Dictionary<VariableSymbol, object> variables)
+    private readonly DiagnosticBag diagnostics;// = new();
+
+    private Binder(BoundScope? parentScope)
     {
-        this.variables = variables;
+        scope = new BoundScope(parentScope);
     }
+
+    public static BoundChunk BindChunk(ChunkSyntax chunk)
+    {
+        var binder = new Binder(null);
+        var block = binder.BindBlock(chunk.Body);
+        return new(block);
+    }
+
+    private BoundBlock BindBlock(BlockSyntax block)
+    {
+        var statements = ImmutableArray.CreateBuilder<BoundStatement>();
+        scope = new BoundScope(scope);
+
+        foreach (var statement in block.Body)
+        {
+            statements.Add(BindStatement(statement));
+        }
+
+        scope = scope.Parent!;
+
+        return new(statements.DrainToImmutable());
+    }
+
+    private BoundStatement BindStatement(StatementSyntax statement) => statement switch
+    {
+        ExpressionStatementSyntax e => BindExpressionStatement(e),
+    };
+
+    private BoundExpressionStatement BindExpressionStatement(ExpressionStatementSyntax e)
+        => new(BindExpression(e.Expression));
 
     public BoundExpression BindExpression(ExpressionSyntax syntax) => syntax switch
     {
@@ -36,16 +69,28 @@ internal sealed class Binder
 
     private BoundExpression BindNameExpression(NameExpressionSyntax syntax)
     {
-        var name = syntax.Name.Value!.ToString();
-
-        var variable = variables.Keys.FirstOrDefault(k => k.Name == name);
-        if (variable is null)
+        if (BindVariableReference(syntax.Name) is VariableSymbol variable)
         {
-            // Look somewhere else
-            return new BoundLiteralExpression(0);
+            return new BoundVariableExpression(variable);
         }
 
-        return new BoundVariableExpression(variable);
+        var env = scope.Lookup("_ENV");
+        return new BoundIndexExpression(new BoundVariableExpression(env), new BoundLiteralExpression(syntax.Name));
+    }
+
+    private VariableSymbol? BindVariableReference(SyntaxToken identifier)
+    {
+        var name = identifier.Value!.ToString()!;
+
+        if (scope.TryLookup(name, out var symbol))
+        {
+            return symbol;
+        }
+        else 
+        {
+            // Diagnostic
+            return null;
+        }
     }
 
     private BoundExpression BindUnaryExpression(UnaryExpressionSyntax syntax)

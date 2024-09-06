@@ -14,7 +14,6 @@ public sealed record SyntaxToken : SyntaxNode
         Kind = kind;
         Value = value;
     }
-
     public SyntaxToken(long value, in SequenceRange location) : this(SyntaxKind.IntegerConstant, location)
     {
         Value = value;

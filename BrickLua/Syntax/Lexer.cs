@@ -212,7 +212,7 @@ public ref struct Lexer
             type = SyntaxFacts.GetIdentifierKind(span);
         }
 
-        return new SyntaxToken(type, str.ToArray().AsMemory(), Current);
+        return new SyntaxToken(type, str.ToString(), Current);
     }
 
     // TODO: This method parses a very narrow set of the numeric constant forms required for conformance.
