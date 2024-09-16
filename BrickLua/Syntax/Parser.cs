@@ -156,13 +156,25 @@ public ref struct Parser
     /// </summary>
     StatementSyntax ParseAssignmentOrCallStatement()
     {
-        var expr = ParsePrefixExpression();
+        var parserState = this;
 
-        if (expr is CallExpressionSyntax call) return new ExpressionStatementSyntax(call);
-        if (expr is DottedExpressionSyntax dotted && dotted.DottedExpressions[^1] is CallExpressionSyntax) return new ExpressionStatementSyntax(dotted);
-
-        return ParseAssignment(expr);
+        var prefixExpression = ParsePrefixExpression();
+        switch (prefixExpression)
+        {
+            case CallExpressionSyntax call:
+                return new ExpressionStatementSyntax(call);
+            case VariableExpressionSyntax var:
+                return ParseAssignment(var);
+            default:
+                // The thing we're about to parse isn't an assignment or call statement.
+                // We need to return some kind of statement syntax, though.
+                // Back up to the state from before we parsed anything, then treat the following code like a function call statement.
+                // The errors will suggest adding invocation.
+                this = parserState;
+                return new ExpressionStatementSyntax(ParseFunctionCallExpression());
+        };
     }
+
 
     /// <summary>
     /// Parses an assignment statement, of the form <c>varlist '=' explist</c>.
@@ -170,21 +182,22 @@ public ref struct Parser
     /// <param name="first">
     /// The first item in <c>varlist</c>. This is neccessary as it was alredy parsed in <see cref="ParseAssignmentOrCallStatement"/>.
     /// </param>
-    AssignmentStatementSyntax ParseAssignment(PrefixExpressionSyntax first)
+    AssignmentStatementSyntax ParseAssignment(VariableExpressionSyntax first)
     {
-        var vars = ImmutableArray.CreateBuilder<PrefixExpressionSyntax>();
+        var vars = ImmutableArray.CreateBuilder<VariableExpressionSyntax>();
         vars.Add(first);
 
         while (CurrentIs(SyntaxKind.Comma, out _))
         {
-            var expr = ParsePrefixExpression();
+            var expr = ParseVariableExpression();
             vars.Add(expr);
         }
 
         MatchToken(SyntaxKind.Equals);
         var exprs = ParseExpressionList();
-        return new AssignmentStatementSyntax(vars.DrainToImmutable(), exprs, From(vars[0], exprs[^1]));
-
+        return new AssignmentStatementSyntax(Location: From(vars[0], exprs[^1]),
+                                            Variables: vars.DrainToImmutable(), 
+                                            Values: exprs);
     }
 
     /// <summary>
@@ -241,7 +254,7 @@ public ref struct Parser
         else
         {
             var declarations = ParseNameAttributeList();
-            var expressions = CurrentIs(SyntaxKind.Equals, out var eq) ? ParseExpressionList() : ImmutableArray<ExpressionSyntax>.Empty;
+            var expressions = CurrentIs(SyntaxKind.Equals, out var eq) ? ParseExpressionList() : [];
 
             return new LocalDeclarationStatementSyntax(declarations, expressions, From(local, expressions.IsDefaultOrEmpty ? declarations[^1].Name : GetLast(expressions, eq!)));
         }
@@ -298,7 +311,7 @@ public ref struct Parser
         ReturnSyntax? @return = null;
         if (CurrentIs(SyntaxKind.Return, out var returnToken))
         {
-            var returnValues = StartsExpression(current) ? ParseExpressionList() : ImmutableArray<ExpressionSyntax>.Empty;
+            var returnValues = StartsExpression(current) ? ParseExpressionList() : [];
 
             CurrentIs(SyntaxKind.Semicolon, out var semi);
             @return = new ReturnSyntax(returnValues, From(returnToken, semi ?? GetLast(returnValues, returnToken)));
@@ -397,70 +410,202 @@ public ref struct Parser
     /// <returns></returns>
     PrefixExpressionSyntax ParsePrefixExpression()
     {
-        // A prefix expression is an expression which can be composed of multiple prefix expressions
-        // linked to each other. The two "base" non-terminals are Name and '(' exp ')'.
-        // The var production lets you build bigger chains via dotting/indexing, and functioncall
-        // lets you call functions. The way these are represented in the syntax tree are via
-        // separate types derived from PrefixExpressionSyntax, excluding the case of dotted
-        // field access, which is represented via multiple indices in this array.
+        // The grammar given in the Lua manual is left-recursive, and unsuitable for use in our parser.
+        // We rewrite this grammar in the following non left-recursive form to use in our parser:
+        //
+        // functioncall ::= var Apply+ | '(' exp ')' Apply+
+        // var ::= name Access* (Apply* Access+)* | '(' exp ')' Access* (Apply* Access+)+
+        //
+        // where we define extra non-terminals:
+        // Apply ::= args | ':' name args
+        // Access ::= '[' exp ']' | '.' name
 
-        var builder = ImmutableArray.CreateBuilder<PrefixExpressionSyntax>();
-
-        do
+        // Prefix expressions start with either a Name token or parenthesized expression. Call, index, and dot expressions
+        // are layered on top using the previously parsed prefix as the receiver. These repeated expressions are accumulated.
+        PrefixExpressionSyntax prefix;
+        if (current.Kind is SyntaxKind.OpenParenthesis)
         {
-            PrefixExpressionSyntax prefix;
+            prefix = ParseParenthesizedExpression();
 
-            // First, we must parse out one of the two "base" non-terminals.
-            if (CurrentIs(SyntaxKind.OpenParenthesis, out var open))
+            if (StartsAccess(current))
             {
-                var expr = ParseExpression();
-                var close = MatchToken(SyntaxKind.CloseParenthesis);
-                prefix = new ParenthesizedExpressionSyntax(expr, From(open, close));
+                // '(' exp ')' Access forces the choice var 
+                prefix = ParseVariableExpression(prefix);
+            }
+            else if (StartsApplication(current))
+            {
+                // '(' exp ')' Apply forces the choice functioncall 
+                prefix = ParseFunctionCallExpression(prefix);
+            }
+            // Otherwise, this prefix expression is just a parenthesized expression.
+        }
+        else
+        {
+            // If it's not parenthesized, we're either parsing a var or a functioncall which starts with a var
+            prefix = ParseVariableExpression();
+            if (StartsApplication(current))
+            {
+                // var Apply forces the choice functioncall
+                prefix = ParseFunctionCallExpression(prefix);
+            }
+        }
+
+        return prefix;
+    }
+
+    /// <summary>
+    /// Parses a variable expression of the form <c>var ::= Name | prefixexp ‘[’ exp ‘]’ | prefixexp ‘.’ Name</c>.
+    /// </summary>
+    /// <param name="receiver"></param>
+    VariableExpressionSyntax ParseVariableExpression(PrefixExpressionSyntax? parenthesizedReceiver = null)
+    {
+        // We use the rewritten grammar to parse variables:
+        // var ::= name Access* (Apply* Access+)* | '(' exp ')' Access* (Apply* Access+)+
+
+        // Because the initial receiver may be a parenthesized expression, we need a separate variable to store
+        // the current receiver and the variable expression which we are parsing.
+        VariableExpressionSyntax? variable = null;
+        PrefixExpressionSyntax receiver;
+
+        // We need to remember whether the initial receiver was a parenthesized expression for later, since we 
+        // have to parse a terminal access in that case.
+        bool mustParseAccess = false;
+        
+        if (parenthesizedReceiver is not null)
+        {
+            receiver = parenthesizedReceiver;
+            mustParseAccess = true;
+        }
+        else if (current.Kind is SyntaxKind.OpenParenthesis)
+        {
+            receiver = ParseParenthesizedExpression();
+            mustParseAccess = true;
+        }
+        else
+        {
+            receiver = variable = ParseNameExpression();
+        }
+        
+        // Parse Access*
+        while (StartsAccess(current))
+        {
+            receiver = variable = ParseAccess(receiver);
+        }
+
+        // Parse (Apply* Access+)
+        // Ensure we parse at least one if necessary
+        while (mustParseAccess || StartsApplication(current) || StartsAccess(current))
+        {
+            var parserState = this;
+            
+            // Parse Apply*
+            while (StartsApplication(current))
+            {
+                receiver = ParseApplication(receiver);
+            }
+
+            // The last part of the prefix chain determines whether we are parsing a variable expression or a call expression.
+            // If this is a call expression, we need to parse up to but not including the last Apply expression, so that the
+            // accumulated variable expression can be passed as the receiver to ParseFunctionCallExpression.
+            // In that case, we need to rewind the parser to before the Apply expressions we parsed and break out.
+            if (mustParseAccess || StartsAccess(current))
+            {
+                do
+                {
+                    receiver = variable = ParseAccess(receiver);
+                } while (StartsAccess(current));
+
+                mustParseAccess = false;
             }
             else
             {
-                var name = MatchToken(SyntaxKind.Name);
-                prefix = new NameExpressionSyntax(name, name.Location);
+                this = parserState;
+                break;
             }
+        }
 
-            switch (current.Kind)
-            {
-                case SyntaxKind.OpenParenthesis:
-                case SyntaxKind.OpenBrace:
-                case SyntaxKind.LiteralString:
-                    var parsedArgs = ParseCallArguments(out var end);
-                    builder.Add(new CallExpressionSyntax(prefix, null, parsedArgs, From(prefix, end)));
-                    continue;
-
-                case SyntaxKind.Colon:
-                    NextToken();
-                    var field = MatchToken(SyntaxKind.Name);
-                    MatchToken(SyntaxKind.OpenParenthesis);
-                    var args = current.Kind != SyntaxKind.CloseParenthesis ? ParseExpressionList() : ImmutableArray<ExpressionSyntax>.Empty;
-                    var closeParen = MatchToken(SyntaxKind.CloseParenthesis);
-                    builder.Add(new CallExpressionSyntax(prefix, field, args, From(prefix, closeParen)));
-                    continue;
-
-                case SyntaxKind.OpenBracket:
-                    NextToken();
-                    var expr = ParseExpression();
-                    var closeBracket = MatchToken(SyntaxKind.CloseBracket);
-                    builder.Add(new IndexExpressionSyntax(prefix, expr, From(prefix, closeBracket)));
-                    continue;
-
-                default:
-                    builder.Add(prefix);
-                    continue;
-            }
-
-        } while (CurrentIs(SyntaxKind.Dot, out _));
+        return variable!;
+    }
 
 
-        if (builder.Count == 1)
-            return builder[0];
+    /// <summary>
+    /// Parses a function call expression of the form <c>functioncall ::= prefixexp args | prefixexp ‘:’ Name args</c>.
+    /// </summary>
+    /// <param name="receiver">The expression representing the receiver of the function call.</param>
+    CallExpressionSyntax ParseFunctionCallExpression(PrefixExpressionSyntax? receiver = null)
+    {
+        receiver ??=
+            current.Kind is SyntaxKind.OpenParenthesis 
+            ? ParseParenthesizedExpression()
+            : ParseVariableExpression(); 
 
-        var seq = builder.DrainToImmutable();
-        return new DottedExpressionSyntax(seq, From(seq[0], seq[^1]));
+        CallExpressionSyntax call;
+        do
+        {
+            receiver = call = ParseApplication(receiver);
+        } while (StartsApplication(current));
+
+        return call;
+    }
+
+    /// <summary>
+    /// Parses a parenthesized expression of the form <c>'(' exp ')'</c>.
+    /// </summary>
+    ParenthesizedExpressionSyntax ParseParenthesizedExpression()
+    {
+        var open = MatchToken(SyntaxKind.OpenParenthesis);
+        var expr = ParseExpression();
+        var close = MatchToken(SyntaxKind.CloseParenthesis);
+        
+        return new ParenthesizedExpressionSyntax(expr, From(open, close));
+    }
+
+    /// <summary>
+    /// Parses an access (index or dot) expression of the form <c>Access ::= '[' exp ']' | '.' Name</c>.
+    /// </summary>
+    /// <param name="receiver">The receiver of the acess expression, parsed previously.</param>
+    VariableExpressionSyntax ParseAccess(PrefixExpressionSyntax receiver)
+    {
+        if (CurrentIs(SyntaxKind.OpenBracket, out _))
+        {
+            var expr = ParseExpression();
+            var close = MatchToken(SyntaxKind.CloseBracket);
+            return new IndexExpressionSyntax(receiver, expr, From(receiver, close));
+        }
+        else
+        {
+            MatchToken(SyntaxKind.Dot);
+            var name = MatchToken(SyntaxKind.Name);
+            return new DottedExpressionSyntax(receiver, name, From(receiver, name));
+        }
+    }
+
+    /// <summary>
+    /// Parses a function application of the form <c>Apply ::= args | ':' Name args</c>.
+    /// </summary>
+    /// <param name="receiver">The receiver of the function call, parsed previously</param>
+    CallExpressionSyntax ParseApplication(PrefixExpressionSyntax receiver)
+    {
+        SyntaxToken? name = null;
+        if (CurrentIs(SyntaxKind.Colon, out _))
+        {
+            name = MatchToken(SyntaxKind.Name);
+        }
+
+        var arguments = ParseCallArguments(out var end);
+        return new CallExpressionSyntax(receiver, name, arguments, From(receiver, end));
+    }
+
+    static bool StartsApplication(SyntaxToken token)
+        => token.Kind is SyntaxKind.OpenParenthesis or SyntaxKind.OpenBrace or SyntaxKind.LiteralString or SyntaxKind.Colon;
+
+    static bool StartsAccess(SyntaxToken token)
+        => token.Kind is SyntaxKind.Dot or SyntaxKind.OpenBracket;
+
+    NameExpressionSyntax ParseNameExpression()
+    {
+        var name = MatchToken(SyntaxKind.Name);
+        return new NameExpressionSyntax(name);
     }
 
     /// <summary>
@@ -474,19 +619,19 @@ public ref struct Parser
             default:
             case SyntaxKind.OpenParenthesis:
                 NextToken();
-                var args = current.Kind != SyntaxKind.CloseParenthesis ? ParseExpressionList() : ImmutableArray<ExpressionSyntax>.Empty;
+                var args = current.Kind != SyntaxKind.CloseParenthesis ? ParseExpressionList() : [];
                 end = MatchToken(SyntaxKind.CloseParenthesis);
                 return args;
 
             case SyntaxKind.OpenBrace:
                 var tableArg = ParseTableConstructor();
                 end = tableArg;
-                return ImmutableArray.Create<ExpressionSyntax>(tableArg);
+                return [tableArg];
 
             case SyntaxKind.LiteralString:
                 var stringArg = NextToken();
                 end = stringArg;
-                return ImmutableArray.Create<ExpressionSyntax>(new LiteralExpressionSyntax(stringArg, stringArg.Location));
+                return [new LiteralExpressionSyntax(stringArg, stringArg.Location)];
         }
     }
 
@@ -497,7 +642,7 @@ public ref struct Parser
     {
         var function = MatchToken(SyntaxKind.Function);
         var body = ParseFunctionBody();
-        return new(body, From(function, body.Body));
+        return new FunctionExpressionSyntax(body, From(function, body.Body));
     }
 
     /// <summary>
@@ -511,7 +656,7 @@ public ref struct Parser
     /// <returns></returns>
     TableConstructorExpressionSyntax ParseTableConstructor()
     {
-        var statements = ImmutableArray.CreateBuilder<FieldAssignmentExpressionSyntax>();
+        var statements = ImmutableArray.CreateBuilder<FieldAssignmentSyntax>();
         var start = MatchToken(SyntaxKind.OpenBrace);
         while (IsNot(SyntaxKind.CloseBrace))
         {
@@ -538,7 +683,7 @@ public ref struct Parser
                     break;
             }
 
-            statements.Add(new FieldAssignmentExpressionSyntax(target, value, From(target, value ?? target)));
+            statements.Add(new FieldAssignmentSyntax(target, value, From(target, value ?? target)));
 
             if (current.Kind is SyntaxKind.Semicolon or SyntaxKind.Comma)
             {
@@ -588,7 +733,7 @@ public ref struct Parser
         if (current.Kind is SyntaxKind.DotDot)
         {
             isVarargs = true;
-            return ImmutableArray<SyntaxToken>.Empty;
+            return [];
         }
 
         var list = ParseNameList();

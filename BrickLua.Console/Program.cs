@@ -6,7 +6,8 @@ while (true)
 {
     var seq = new ReadOnlySequence<char>(Console.ReadLine().AsMemory());
     var parser = new Parser(new Lexer(new SequenceReader<char>(seq)));
-    parser.ParseChunk().WriteTo(Console.Out);
+    var chunk = parser.ParseChunk();
+    chunk.WriteTo(Console.Out);
 
     foreach (var diag in parser.Diagnostics)
     {

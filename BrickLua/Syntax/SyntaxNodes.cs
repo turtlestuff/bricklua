@@ -6,7 +6,7 @@ public sealed record ChunkSyntax(BlockSyntax Body, in SequenceRange Location) : 
 
 public abstract record StatementSyntax(in SequenceRange Location) : SyntaxNode(Location);
 
-public sealed record AssignmentStatementSyntax(ImmutableArray<PrefixExpressionSyntax> Variables, 
+public sealed record AssignmentStatementSyntax(ImmutableArray<VariableExpressionSyntax> Variables, 
     ImmutableArray<ExpressionSyntax> Values, in SequenceRange Location) : StatementSyntax(Location);
 
 public sealed record BlockSyntax(ImmutableArray<StatementSyntax> Body, ReturnSyntax? Return, in SequenceRange Location) :
@@ -63,10 +63,10 @@ public sealed record FunctionExpressionSyntax(FunctionBody Body, in SequenceRang
 
 public sealed record LiteralExpressionSyntax(SyntaxToken Value, in SequenceRange Location) : ExpressionSyntax(Location);
 
-public sealed record TableConstructorExpressionSyntax(ImmutableArray<FieldAssignmentExpressionSyntax> FieldAssignments, in SequenceRange Location) :
+public sealed record TableConstructorExpressionSyntax(ImmutableArray<FieldAssignmentSyntax> FieldAssignments, in SequenceRange Location) :
     ExpressionSyntax(Location);
 
-public sealed record FieldAssignmentExpressionSyntax(SyntaxNode Field, ExpressionSyntax? Value, in SequenceRange Location) : ExpressionSyntax(Location);
+public sealed record FieldAssignmentSyntax(SyntaxNode Field, ExpressionSyntax? Value, in SequenceRange Location) : SyntaxNode(Location);
 
 public sealed record UnaryExpressionSyntax(SyntaxKind Operator, ExpressionSyntax Operand, in SequenceRange Location) : ExpressionSyntax(Location);
 
@@ -74,15 +74,17 @@ public sealed record VarargExpressionSyntax(in SequenceRange Location) : Express
 
 public abstract record PrefixExpressionSyntax(in SequenceRange Location) : ExpressionSyntax(Location);
 
-public sealed record CallExpressionSyntax(PrefixExpressionSyntax CalledExpression, SyntaxToken? Name, ImmutableArray<ExpressionSyntax> Arguments, 
+public abstract record VariableExpressionSyntax(in SequenceRange Location) : PrefixExpressionSyntax(Location);
+
+public sealed record CallExpressionSyntax(PrefixExpressionSyntax Receiver, SyntaxToken? Name, ImmutableArray<ExpressionSyntax> Arguments, 
     in SequenceRange Location) : PrefixExpressionSyntax(Location);
 
-public sealed record DottedExpressionSyntax(ImmutableArray<PrefixExpressionSyntax> DottedExpressions, in SequenceRange Location) : 
-    PrefixExpressionSyntax(Location);
+public sealed record DottedExpressionSyntax(PrefixExpressionSyntax Receiver, SyntaxToken Name, in SequenceRange Location) : 
+    VariableExpressionSyntax(Location);
 
-public sealed record IndexExpressionSyntax(PrefixExpressionSyntax IndexedExpression, ExpressionSyntax IndexArgument, in SequenceRange Location) : 
-    PrefixExpressionSyntax(Location);
+public sealed record IndexExpressionSyntax(PrefixExpressionSyntax Receiver, ExpressionSyntax IndexArgument, in SequenceRange Location) : 
+    VariableExpressionSyntax(Location);
 
-public sealed record NameExpressionSyntax(SyntaxToken Name, in SequenceRange Location) : PrefixExpressionSyntax(Location);
+public sealed record NameExpressionSyntax(SyntaxToken Name) : VariableExpressionSyntax(Name.Location);
 
 public sealed record ParenthesizedExpressionSyntax(ExpressionSyntax Expression, in SequenceRange Location) : PrefixExpressionSyntax(Location);
