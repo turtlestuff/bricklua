@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Diagnostics;
 
 using BrickLua.CodeAnalysis.Symbols;
 using BrickLua.CodeAnalysis.Syntax;
@@ -40,8 +41,33 @@ internal sealed class Binder
 
     private BoundStatement BindStatement(StatementSyntax statement) => statement switch
     {
+        AssignmentStatementSyntax a => BindAssignmentStatement(a),
+        // BreakStatementSyntax b => BindBreakStatement(b),
+        // DoStatementSyntax d => BindDoStatement(d),
+        // FunctionStatementSyntax f => BindFunctionStatement(f),
+        // GotoStatementSyntax g => BindGotoStatement(g),
+        // LabelStatementSyntax l => BindLabelStatement(l),
+        // LocalFunctionStatementSyntax l => BindLocalFunctionStatement(l),
+        // RepeatStatementSyntax r => BindRepeatStatement(r),
         ExpressionStatementSyntax e => BindExpressionStatement(e),
     };
+
+    private BoundAssignmentStatement BindAssignmentStatement(AssignmentStatementSyntax a)
+    {
+        var variables = ImmutableArray.CreateBuilder<BoundVariableExpression>();
+        foreach (var var in a.Variables)
+        {
+            variables.Add(BindVariableExpression(var));
+        }
+
+        var values = ImmutableArray.CreateBuilder<BoundExpression>();
+        foreach (var val in a.Values)
+        {
+            values.Add(BindExpression(val));
+        }
+
+        return new BoundAssignmentStatement(variables.DrainToImmutable(), values.DrainToImmutable());
+    }
 
     private BoundExpressionStatement BindExpressionStatement(ExpressionStatementSyntax e)
         => new(BindExpression(e.Expression));
@@ -53,7 +79,43 @@ internal sealed class Binder
         NameExpressionSyntax n => BindNameExpression(n),
         UnaryExpressionSyntax u => BindUnaryExpression(u),
         BinaryExpressionSyntax b => BindBinaryExpression(b),
+        PrefixExpressionSyntax p => BindPrefixExpression(p),
         _ => throw new Exception($"Unexpected syntax {syntax.GetType().Name}"),
+    };
+
+    private BoundExpression BindPrefixExpression(PrefixExpressionSyntax prefix) => prefix switch
+    {
+        ParenthesizedExpressionSyntax p => BindExpression(p.Expression),
+        VariableExpressionSyntax v => BindVariableExpression(v),
+        CallExpressionSyntax c => BindCallExpression(c),
+        _ => throw new UnreachableException(),
+    };
+
+    private BoundCallExpression BindCallExpression(CallExpressionSyntax call)
+    {
+        var receiver = BindPrefixExpression(call.Receiver);
+
+        var args = ImmutableArray.CreateBuilder<BoundExpression>();
+        foreach (var arg in call.Arguments)
+        {
+            args.Add(BindExpression(arg));
+        }
+
+        return new BoundCallExpression(receiver, args.DrainToImmutable());
+    }
+
+    private BoundVariableExpression BindVariableExpression(VariableExpressionSyntax variable) => variable switch
+    {
+        DottedExpressionSyntax d 
+            => new BoundIndexExpression(
+                    BindExpression(d.Receiver),
+                    new BoundLiteralExpression(d.Name.Value!)),
+        IndexExpressionSyntax i 
+            => new BoundIndexExpression(
+                    BindExpression(i.Receiver),
+                    BindExpression(i.IndexArgument)),
+        NameExpressionSyntax n => BindNameExpression(n),
+        _ => throw new UnreachableException(),
     };
 
     private BoundExpression BindParenthesizedExpression(ParenthesizedExpressionSyntax syntax)
@@ -67,15 +129,15 @@ internal sealed class Binder
         return new BoundLiteralExpression(value);
     }
 
-    private BoundExpression BindNameExpression(NameExpressionSyntax syntax)
+    private BoundVariableExpression BindNameExpression(NameExpressionSyntax syntax)
     {
         if (BindVariableReference(syntax.Name) is VariableSymbol variable)
         {
-            return new BoundVariableExpression(variable);
+            return new BoundNameExpression(variable);
         }
 
         var env = scope.Lookup("_ENV");
-        return new BoundIndexExpression(new BoundVariableExpression(env), new BoundLiteralExpression(syntax.Name));
+        return new BoundIndexExpression(new BoundNameExpression(env), new BoundLiteralExpression(syntax.Name));
     }
 
     private VariableSymbol? BindVariableReference(SyntaxToken identifier)

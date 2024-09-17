@@ -14,9 +14,15 @@ internal abstract record BoundStatement : BoundNode;
 
 internal sealed record BoundExpressionStatement(BoundExpression Expression) : BoundStatement;
 
-internal sealed record BoundIndexExpression(BoundExpression PrefixExpression, BoundExpression Argument) : BoundExpression;
+internal sealed record BoundAssignmentStatement(ImmutableArray<BoundVariableExpression> Variables, ImmutableArray<BoundExpression> Expressions) : BoundStatement;
 
-internal sealed record BoundCallExpression(BoundExpression PrefixExpression, ImmutableArray<BoundExpression> Arguments) : BoundExpression;
+internal abstract record BoundVariableExpression : BoundExpression;
+
+internal sealed record BoundIndexExpression(BoundExpression Receiver, BoundExpression IndexArgument) : BoundVariableExpression;
+
+internal sealed record BoundNameExpression(VariableSymbol Variable) : BoundVariableExpression;
+
+internal sealed record BoundCallExpression(BoundExpression Receiver, ImmutableArray<BoundExpression> Arguments) : BoundExpression;
 
 internal abstract record BoundExpression : BoundNode;
 
@@ -26,4 +32,3 @@ internal sealed record BoundBinaryExpression(BoundExpression Left, BoundBinaryOp
 
 internal sealed record BoundUnaryExpression(BoundUnaryOperator Operator, BoundExpression Operand) : BoundExpression;
 
-internal sealed record BoundVariableExpression(VariableSymbol Variable) : BoundExpression;
