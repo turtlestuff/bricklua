@@ -4,18 +4,20 @@ using BrickLua.CodeAnalysis.Symbols;
 
 namespace BrickLua.CodeAnalysis.Binding;
 
+internal sealed record BoundLabel(string Name);
+
 internal sealed class BoundScope(BoundScope? parent)
 {
-    private readonly Dictionary<string, VariableSymbol> variables = new();
+    private readonly Dictionary<string, LocalSymbol> variables = new();
 
     public BoundScope? Parent { get; } = parent;
 
-    public bool TryDeclare(VariableSymbol variable)
+    public bool TryDeclare(LocalSymbol variable)
     {
         return variables.TryAdd(variable.Name, variable);
     }
 
-    public bool TryLookup(string name, out VariableSymbol variable)
+    public bool TryLookup(string name, out LocalSymbol variable)
     {
         if (variables.TryGetValue(name, out variable!))
             return true;
@@ -23,7 +25,7 @@ internal sealed class BoundScope(BoundScope? parent)
         return Parent?.TryLookup(name, out variable) ?? false;
     }
 
-    public VariableSymbol Lookup(string name)
+    public LocalSymbol Lookup(string name)
     {
         if (variables.TryGetValue(name, out var variable))
             return variable;
@@ -31,7 +33,7 @@ internal sealed class BoundScope(BoundScope? parent)
         return Parent?.Lookup(name) ?? throw new ArgumentException($"Expected variable {name} to be defined.");
     }
 
-    public ImmutableArray<VariableSymbol> GetDeclaredVariables()
+    public ImmutableArray<LocalSymbol> GetDeclaredVariables()
     {
         return variables.Values.ToImmutableArray();
     }

@@ -10,6 +10,9 @@ internal sealed class Binder
 {
     private BoundScope scope;
 
+    private Stack<BoundLabel> breakLabelStack = [];
+    private int loopCounter;
+
     private readonly DiagnosticBag diagnostics;// = new();
 
     private Binder(BoundScope? parentScope)
@@ -42,15 +45,122 @@ internal sealed class Binder
     private BoundStatement BindStatement(StatementSyntax statement) => statement switch
     {
         AssignmentStatementSyntax a => BindAssignmentStatement(a),
-        // BreakStatementSyntax b => BindBreakStatement(b),
-        // DoStatementSyntax d => BindDoStatement(d),
-        // FunctionStatementSyntax f => BindFunctionStatement(f),
+        WhileStatementExpression w => BindWhileStatement(w),
+        BreakStatementSyntax b => BindBreakStatement(b),
+        DoStatementSyntax d => BindDoStatement(d),
+        FunctionStatementSyntax f => BindFunctionStatement(f),
         // GotoStatementSyntax g => BindGotoStatement(g),
         // LabelStatementSyntax l => BindLabelStatement(l),
-        // LocalFunctionStatementSyntax l => BindLocalFunctionStatement(l),
+        LocalDeclarationStatementSyntax l => BindLocalDeclarationStatement(l),
+        LocalFunctionStatementSyntax l => BindLocalFunctionStatement(l),
         // RepeatStatementSyntax r => BindRepeatStatement(r),
         ExpressionStatementSyntax e => BindExpressionStatement(e),
     };
+
+    private BoundStatement BindLocalDeclarationStatement(LocalDeclarationStatementSyntax local)
+    {
+        var variables = ImmutableArray.CreateBuilder<BoundVariableExpression>();
+        foreach (var declaration in local.Declarations)
+        {
+            var localVar = DeclareVariable(declaration.Name);
+            variables.Add(new BoundNameExpression(localVar));
+        }
+
+        var expressions = ImmutableArray.CreateBuilder<BoundExpression>();
+        foreach (var var in local.Expressions)
+        {
+            expressions.Add(BindExpression(var));
+        }
+
+        return new BoundAssignmentStatement(variables.DrainToImmutable(), expressions.DrainToImmutable());
+    }
+
+    private BoundExpression BindFunctionBody(FunctionBody body)
+    {
+        scope = new BoundScope(scope);
+
+        var statements = ImmutableArray.CreateBuilder<BoundStatement>();
+        foreach (var param in body.ParameterNames)
+        {
+            scope.TryDeclare(new LocalSymbol(param.Value!.ToString()!));
+        }
+
+        var bodyBlock = BindBlock(body.Body);
+
+        scope = scope.Parent!;
+
+        return new BoundFunctionExpression(bodyBlock);
+    }
+
+    private BoundStatement BindLocalFunctionStatement(LocalFunctionStatementSyntax l)
+    {
+        var local = DeclareVariable(l.Name);
+        var body = BindFunctionBody(l.Body);
+        return new BoundAssignmentStatement([new BoundNameExpression(local)], [body]);
+    }
+
+
+    private BoundStatement BindFunctionStatement(FunctionStatementSyntax function)
+    {
+        var name = BindFunctionName(function.Name);
+        var body = BindFunctionBody(function.Body);
+        return new BoundAssignmentStatement([name], [body]);
+    }
+
+    private BoundVariableExpression BindFunctionName(FunctionName functionName)
+    {
+        var names = functionName.DottedNames;
+        if (functionName.FieldName is not null)
+        {
+            names = names.Add(functionName.FieldName);
+        }
+
+        VariableExpressionSyntax name = new NameExpressionSyntax(names[0]);
+        foreach (var nameSegment in names.AsSpan(1..))
+        {
+            name = new DottedExpressionSyntax(name, nameSegment, default);
+        }
+
+        return BindVariableExpression(name);
+    }
+
+    private BoundStatement BindDoStatement(DoStatementSyntax @do)
+    {
+        return new BoundDoStatement(BindBlock(@do.Body));
+    }
+
+    private BoundStatement BindBreakStatement(BreakStatementSyntax @break)
+    {
+        if (breakLabelStack.Count == 0)
+        {
+            return new BoundExpressionStatement(new BoundErrorExpression());
+        }
+
+        var breakLabel = breakLabelStack.Pop();
+        return new BoundGotoStatement(breakLabel);
+    }
+
+
+    private BoundWhileStatement BindWhileStatement(WhileStatementExpression @while)
+    {
+        var condition = BindExpression(@while.Condition);
+        var body = BindLoopBody(@while.Body, out var breakLabel);
+    
+        return new BoundWhileStatement(condition, body, breakLabel);
+    }
+
+
+    private BoundBlock BindLoopBody(BlockSyntax body, out BoundLabel breakLabel)
+    {
+        loopCounter++;
+        breakLabel = new BoundLabel($"break{loopCounter}");
+
+        breakLabelStack.Push(breakLabel);
+        var boundBody = BindBlock(body);
+        breakLabelStack.Pop();
+
+        return boundBody;
+    }
 
     private BoundAssignmentStatement BindAssignmentStatement(AssignmentStatementSyntax a)
     {
@@ -131,7 +241,7 @@ internal sealed class Binder
 
     private BoundVariableExpression BindNameExpression(NameExpressionSyntax syntax)
     {
-        if (BindVariableReference(syntax.Name) is VariableSymbol variable)
+        if (BindVariableReference(syntax.Name) is LocalSymbol variable)
         {
             return new BoundNameExpression(variable);
         }
@@ -140,7 +250,23 @@ internal sealed class Binder
         return new BoundIndexExpression(new BoundNameExpression(env), new BoundLiteralExpression(syntax.Name));
     }
 
-    private VariableSymbol? BindVariableReference(SyntaxToken identifier)
+    private LocalSymbol DeclareVariable(SyntaxToken identifier)
+    {
+        var name = identifier.Value!.ToString()!;
+        var local = new LocalSymbol(name);
+
+        if (scope.TryDeclare(local))
+        {
+            return local;
+        }
+        else
+        {
+            // Diagnostic?
+            return local;
+        }
+    }
+
+    private LocalSymbol? BindVariableReference(SyntaxToken identifier)
     {
         var name = identifier.Value!.ToString()!;
 
