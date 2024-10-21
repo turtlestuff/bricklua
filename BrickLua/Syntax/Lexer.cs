@@ -1,4 +1,4 @@
-﻿using System.Buffers;
+using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -18,6 +18,11 @@ public ref struct Lexer
         this.reader = reader;
         tokenStart = default;
         Diagnostics = new DiagnosticBag(reader.Sequence);
+
+        if (NextIs('#'))
+        {
+            SkipComment();
+        }
     }
 
     public SyntaxToken Lex()
