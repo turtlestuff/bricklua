@@ -730,8 +730,9 @@ public ref struct Parser
     /// <param name="isVarargs">Returns whether the parameter list includes a varargs expression.</param>
     ImmutableArray<SyntaxToken> ParseParameterList(out bool isVarargs)
     {
-        if (current.Kind is SyntaxKind.DotDot)
+        if (current.Kind is SyntaxKind.DotDotDot)
         {
+            NextToken();
             isVarargs = true;
             return [];
         }

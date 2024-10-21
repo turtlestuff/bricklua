@@ -215,57 +215,47 @@ public ref struct Lexer
         return new SyntaxToken(type, str.ToString(), Current);
     }
 
-    // TODO: This method parses a very narrow set of the numeric constant forms required for conformance.
-    // Review the supported forms for integer literals (and figure out why that custom parsing code was added for hex integers...).
     // Hex float literals are blocked on https://github.com/dotnet/runtime/issues/1630
     SyntaxToken LexNumeral()
     {
-        if (LexInteger(out var token))
-        {
-            return token;
-        }
-
-        throw new NotImplementedException("This type of literal is not supported");
-    }
-
-    bool LexInteger([NotNullWhen(true)] out SyntaxToken? token)
-    {
-        bool negative = NextIs('-');
+        _ = NextIs('-');
+        
+        bool isHex = false;
         if (NextIs('0') && NextIs('X', 'x'))
         {
-            var start = reader.Position;
             reader.AdvancePastAny("1234567890ABCDEFabcdef");
-            var str = reader.Sequence.Slice(start, reader.Position);
-
-            var num = long.Parse(str.IsSingleSegment ? str.FirstSpan : str.ToArray(), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
-
-            if (negative) num = -num;
-            token = new SyntaxToken(num, new SequenceRange(this.tokenStart, reader.Position));
-            return true;
+            isHex = true;
         }
         else
         {
-            reader.AdvancePastAny("1234567890ABCDEFabcdef");
-            var str = reader.Sequence.Slice(tokenStart, reader.Position);
-            long num = 0;
-
-            foreach (var memory in str)
+            reader.AdvancePastAny("1234567890");
+            if (NextIs('.'))
             {
-                foreach (var ch in memory.Span)
-                {
-                    var d = ch - '0';
-                    if (num >= long.MaxValue / 10 && (num > long.MaxValue / 10 || d > (long.MaxValue % 10) + (negative ? 1 : 0)))
-                    {
-                        token = default;
-                        return false;
-                    }
-                    num = num * 10 + d;
-                }
+                reader.AdvancePastAny("1234567890");
             }
 
-            if (negative) num = -num;
-            token = new SyntaxToken(num, Current);
-            return true;
+            if (NextIs('e', 'E'))
+            {
+                _ = NextIs('-');
+                reader.AdvancePastAny("1234567890");
+            }
+        }
+
+        var str = reader.Sequence.Slice(tokenStart, reader.Position);
+        var span = str.IsSingleSegment ? str.FirstSpan : str.ToArray();
+        var format = isHex ? NumberStyles.HexNumber : NumberStyles.Number;
+
+        if (long.TryParse(span, format, CultureInfo.InvariantCulture, out var longResult))
+        {
+            return new SyntaxToken(longResult, Current);
+        }
+        else if (double.TryParse(span, format, CultureInfo.InvariantCulture, out var doubleResult))
+        {
+            return new SyntaxToken(doubleResult, Current);
+        }
+        else
+        {
+            throw new NotImplementedException("Unimplemented numeric literal.");
         }
     }
 
@@ -437,7 +427,7 @@ public ref struct Lexer
     // This can be done with the escape sequence \xXX, where XX is a sequence of exactly two hexadecimal digits,
     // or with the escape sequence \ddd, where ddd is a sequence of up to three decimal digits.
 
-    void ReadHexEscapeSequence(ref SequenceReader<char> reader, ArrayBufferWriter<char> buffer, long startIndex)
+    readonly void ReadHexEscapeSequence(ref SequenceReader<char> reader, ArrayBufferWriter<char> buffer, long startIndex)
     {
         if (!reader.TryRead(out var ch1) || !reader.TryRead(out var ch2))
         {
@@ -448,7 +438,7 @@ public ref struct Lexer
             return;
         }
 
-        var num = (char) byte.Parse(stackalloc char[] { ch1, ch2 }, NumberStyles.AllowHexSpecifier);
+        var num = (char)byte.Parse([ch1, ch2], NumberStyles.AllowHexSpecifier);
         buffer.Write(MemoryMarshal.CreateSpan(ref num, 1));
     }
 
