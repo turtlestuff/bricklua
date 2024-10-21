@@ -104,9 +104,6 @@ public ref struct Lexer
                 return LexLongLiteral(level);
 
             case '-':
-                if (reader.TryPeek(out var next) && next is >= '0' and <= '9')
-                    return LexNumeral();
-
                 reader.Advance(1);
 
                 if (NextIs('-'))
@@ -128,6 +125,11 @@ public ref struct Lexer
                     }
 
                     return NewToken(SyntaxKind.DotDot);
+                }
+
+                if (reader.TryPeek(out var next) && next is >= '0' and <= '9')
+                {
+                    return LexNumeral();
                 }
 
                 return NewToken(SyntaxKind.Dot);
@@ -220,39 +222,48 @@ public ref struct Lexer
         return new SyntaxToken(type, str.ToString(), Current);
     }
 
-    // Hex float literals are blocked on https://github.com/dotnet/runtime/issues/1630
     SyntaxToken LexNumeral()
     {
-        _ = NextIs('-');
-        
         bool isHex = false;
         if (NextIs('0') && NextIs('X', 'x'))
         {
             reader.AdvancePastAny("1234567890ABCDEFabcdef");
+
             isHex = true;
         }
-        else
-        {
-            reader.AdvancePastAny("1234567890");
-            if (NextIs('.'))
-            {
-                reader.AdvancePastAny("1234567890");
-            }
 
-            if (NextIs('e', 'E'))
-            {
-                _ = NextIs('-');
-                reader.AdvancePastAny("1234567890");
-            }
+        string chars = isHex ? "1234567890ABCDEFabcdef" : "1234567890";
+
+        reader.AdvancePastAny(chars);
+        if (NextIs('.'))
+        {
+            reader.AdvancePastAny(chars);
+        }
+
+        if (isHex ? NextIs('p', 'P') : NextIs('e', 'E'))
+        {
+            _ = NextIs('-', '+');
+            reader.AdvancePastAny(chars);
         }
 
         var str = reader.Sequence.Slice(tokenStart, reader.Position);
         var span = str.IsSingleSegment ? str.FirstSpan : str.ToArray();
-        var format = isHex ? NumberStyles.HexNumber : NumberStyles.Number;
+        
+        if (isHex)
+        {
+            // Remove '0x' prefix
+            span = span[2..];
+        }
 
+        var format = isHex ? NumberStyles.HexNumber : NumberStyles.Float;
         if (long.TryParse(span, format, CultureInfo.InvariantCulture, out var longResult))
         {
             return new SyntaxToken(longResult, Current);
+        }
+        else if (isHex)
+        {
+            // Hex float literals are blocked on https://github.com/dotnet/runtime/issues/1630
+            return new SyntaxToken(0.0, Current);
         }
         else if (double.TryParse(span, format, CultureInfo.InvariantCulture, out var doubleResult))
         {
