@@ -1,4 +1,4 @@
-using System.Buffers;
+﻿using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -357,7 +357,7 @@ public ref struct Lexer
 
     ReadOnlyMemory<char> UnescapeStringLiteral(in ReadOnlySequence<char> literal, bool multiLine, long startIndex)
     {
-        var buffer = new ArrayBufferWriter<char>(checked((int) literal.Length));
+        var buffer = new ArrayBufferWriter<char>(checked((int)literal.Length + 1));
 
         var reader = new SequenceReader<char>(literal);
 
@@ -417,7 +417,13 @@ public ref struct Lexer
                         ReadDecimalEscapeSequence(ref reader, buffer, startIndex, escapeSequence);
                         break;
 
-                    // TODO: Implement `\z` and `\` followed by space
+                    case 'z':
+                        ReadSkipWhitespaceEscapeSequence(ref reader);
+                        break;
+
+                    case '\r' or '\n':
+                        ReadLineBreakEscapeSequence(ref reader, buffer, escapeSequence);
+                        break;
 
                     default:
                         var start = this.reader.Sequence.GetPosition(startIndex + reader.Consumed);
@@ -436,6 +442,18 @@ public ref struct Lexer
         }
 
         return buffer.WrittenMemory;
+    }
+
+    private void ReadLineBreakEscapeSequence(ref SequenceReader<char> reader, ArrayBufferWriter<char> buffer, char escapeSequence)
+    {
+        if (escapeSequence == '\r' && NextIs('\n'))
+        {
+            buffer.Write("\r\n");
+        }
+        else if (escapeSequence == '\n')
+        {
+            buffer.Write("\n");
+        }
     }
 
     // 3.1 Lexical Conventions
@@ -458,7 +476,7 @@ public ref struct Lexer
         buffer.Write(MemoryMarshal.CreateSpan(ref num, 1));
     }
 
-    void ReadDecimalEscapeSequence(ref SequenceReader<char> reader, ArrayBufferWriter<char> buffer, long startIndex, char d1)
+    readonly void ReadDecimalEscapeSequence(ref SequenceReader<char> reader, ArrayBufferWriter<char> buffer, long startIndex, char d1)
     {
         Span<char> escape = stackalloc char[3];
         escape[0] = d1;
@@ -485,8 +503,7 @@ public ref struct Lexer
         buffer.Write(MemoryMarshal.CreateSpan(ref shortNum, 1));
     }
 
-
-    void ReadCodePointEscapeSequence(ref SequenceReader<char> reader, ArrayBufferWriter<char> buffer, long startIndex)
+    readonly void ReadCodePointEscapeSequence(ref SequenceReader<char> reader, ArrayBufferWriter<char> buffer, long startIndex)
     {
         // 3.1 Lexical Conventions  
         // The UTF-8 encoding of a Unicode character can be inserted in a literal string
@@ -515,15 +532,36 @@ public ref struct Lexer
             return;
         }
 
-        var codePoint = int.Parse(span, NumberStyles.AllowHexSpecifier);
+        var codePoint = uint.Parse(span, NumberStyles.AllowHexSpecifier);
+
+        static int EncodeToUtf16(uint value, Span<char> destination)
+        {
+            // Is it in the BMP?
+            if (value <= 0xFFFFu)
+            {
+                destination[0] = (char)value;
+                return 1;
+            }
+            else
+            {
+                var highSurrogateCodePoint = (char)((value + ((0xD800u - 0x40u) << 10)) >> 10);
+                var lowSurrogateCodePoint = (char)((value & 0x3FFu) + 0xDC00u);
+
+                destination[0] = highSurrogateCodePoint;
+                destination[1] = lowSurrogateCodePoint;
+                return 2;
+            }
+        }
 
         Span<char> chars = stackalloc char[2];
 
-        // TODO: 3.1 Lexical Conventions says that the value is not restricted to valid Unicode code points,
-        // and can be any integer less than 2^31. Rune will throw for any value which is not a valid
-        // Unicode scalar. Investigate how better conformance can be achieved here.
-        new Rune(codePoint).EncodeToUtf16(chars);
-        buffer.Write(chars);
+        var written = EncodeToUtf16(codePoint, chars);
+        buffer.Write(chars[..written]);
+    }
+
+    readonly void ReadSkipWhitespaceEscapeSequence(ref SequenceReader<char> reader)
+    {
+        reader.AdvancePastAny(" \r\n\f\t\v");
     }
 
     SequenceRange Current => new(tokenStart, reader.Position);
