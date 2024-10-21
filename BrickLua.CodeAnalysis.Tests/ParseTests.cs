@@ -1,7 +1,5 @@
 ﻿namespace BrickLua.CodeAnalysis.Tests;
 
-using System.Buffers;
-
 using BrickLua.CodeAnalysis.Syntax;
 
 public class ParseTests
@@ -10,10 +8,8 @@ public class ParseTests
     [LuaTestData]
     public void ParseWithNoDiagnostics(string luaCode)
     {
-        var seq = new ReadOnlySequence<char>(luaCode.AsMemory());
-        var parser = new Parser(new Lexer(new SequenceReader<char>(seq)));
-        var chunk = parser.ParseChunk();
+        var syntaxTree = SyntaxTree.Parse(luaCode);
 
-        Assert.Empty(parser.Diagnostics);
+        Assert.Empty(syntaxTree.Diagnostics);
     }
 }

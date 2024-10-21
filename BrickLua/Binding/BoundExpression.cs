@@ -6,7 +6,7 @@ namespace BrickLua.CodeAnalysis.Binding;
 
 internal abstract record BoundNode;
 
-internal sealed record BoundChunk(BoundBlock Body) : BoundNode;
+internal sealed record BoundChunk(BoundBlock Body, ImmutableArray<Diagnostic> Diagnostics) : BoundNode;
 
 internal sealed record BoundBlock(ImmutableArray<BoundStatement> Statements) : BoundNode;
 

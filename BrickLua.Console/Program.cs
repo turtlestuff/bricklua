@@ -2,32 +2,27 @@
 
 using BrickLua.CodeAnalysis.Syntax;
 
-while (true)
+while (Console.ReadLine() is string text)
 {
-    var seq = new ReadOnlySequence<char>(Console.ReadLine().AsMemory());
-    var parser = new Parser(new Lexer(new SequenceReader<char>(seq)));
-    var chunk = parser.ParseChunk();
-    chunk.WriteTo(Console.Out);
+    var syntax = SyntaxTree.Parse(text);
+    syntax.Root.WriteTo(Console.Out);
 
-    foreach (var diag in parser.Diagnostics)
+    foreach (var diag in syntax.Diagnostics)
     {
-
         Console.ForegroundColor = ConsoleColor.Red;
         Console.Write($"{diag.Message} ");
         Console.ForegroundColor = ConsoleColor.DarkGray;
-        Console.WriteLine(parser.Diagnostics.Text.Slice(diag.Location.Start, diag.Location.End).ToString());
+        Console.WriteLine(syntax.Text.Slice(diag.Location.Start, diag.Location.End).ToString());
         Console.ResetColor();
 
-        var text = parser.Diagnostics.Text;
         var location = diag.Location;
-        var index = text.Slice(0, diag.Location.Start).Length;
-        var reader = new SequenceReader<char>(parser.Diagnostics.Text);
+        var reader = new SequenceReader<char>(new ReadOnlySequence<char>(text.AsMemory()));
 
         var line = reader.Sequence;
-        var startPos = text.Start;
+        var startPos = reader.Position;
         while (reader.TryReadTo(sequence: out var sequence, '\n'))
         {
-            if (reader.Consumed - 1 > index)
+            if (reader.Consumed >= text.Length)
             {
                 line = sequence;
                 break;
@@ -38,8 +33,8 @@ while (true)
 
         Console.WriteLine(line.ToString());
 
-        var underlineLength = text.Slice(location.Start, location.End).Length;
-        var padLength = text.Slice(startPos, location.Start).Length + underlineLength;
-        Console.WriteLine($"{new string('~', (int) underlineLength).PadLeft((int) padLength)}");
+        var underlineLength = syntax.Text.Slice(location.Start, location.End).Length;
+        var padLength = syntax.Text.Slice(startPos, location.Start).Length + underlineLength;
+        Console.WriteLine($"{new string('~', (int)underlineLength).PadLeft((int)padLength)}");
     }
 }

@@ -1,23 +1,21 @@
 ﻿using System.Buffers;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace BrickLua.CodeAnalysis.Syntax;
 
-public ref struct Lexer
+internal ref struct Lexer
 {
     private SequenceReader<char> reader;
     private SequencePosition tokenStart;
 
-    public DiagnosticBag Diagnostics { get; }
+    public DiagnosticBag Diagnostics { get; } = new();
 
     public Lexer(in SequenceReader<char> reader)
     {
         this.reader = reader;
         tokenStart = default;
-        Diagnostics = new DiagnosticBag(reader.Sequence);
+        Diagnostics = new DiagnosticBag();
 
         if (NextIs('#'))
         {

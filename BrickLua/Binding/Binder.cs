@@ -13,18 +13,20 @@ internal sealed class Binder
     private Stack<BoundLabel> breakLabelStack = [];
     private int loopCounter;
 
-    private readonly DiagnosticBag diagnostics;// = new();
+    private readonly DiagnosticBag diagnostics = new();
 
     private Binder(BoundScope? parentScope)
     {
         scope = new BoundScope(parentScope);
     }
 
-    public static BoundChunk BindChunk(ChunkSyntax chunk)
+    public static BoundChunk BindChunk(SyntaxTree chunk)
     {
         var binder = new Binder(null);
-        var block = binder.BindBlock(chunk.Body);
-        return new(block);
+        binder.diagnostics.AddRange(chunk.Diagnostics);
+
+        var block = binder.BindBlock(chunk.Root.Body);
+        return new BoundChunk(block, binder.diagnostics.ToImmutableArray());
     }
 
     private BoundBlock BindBlock(BlockSyntax block)

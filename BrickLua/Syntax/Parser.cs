@@ -1,54 +1,79 @@
-﻿using System.Collections.Immutable;
+﻿using System.Buffers;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 
 namespace BrickLua.CodeAnalysis.Syntax;
 
-public ref struct Parser
+internal sealed class Parser
 {
-    private SyntaxToken current;
-    private SyntaxToken? peek;
+    private readonly ImmutableArray<SyntaxToken> tokens;
+    private int position;
+    
+    private readonly DiagnosticBag diagnostics = new();
 
-    private Lexer lexer;
+    private readonly ReadOnlySequence<char> text;
 
-    public DiagnosticBag Diagnostics { get; }
-
-    public Parser(in Lexer lexer)
+    private Parser(in ReadOnlySequence<char> text)
     {
-        this.lexer = lexer;
-        current = this.lexer.Lex();
-        peek = null;
-        Diagnostics = lexer.Diagnostics;
+        this.text = text;
+        
+        var lexer = new Lexer(new SequenceReader<char>(text));
+        var tokens = ImmutableArray.CreateBuilder<SyntaxToken>();
+
+        while (lexer.Lex() is var token)
+        {
+            tokens.Add(token);
+            
+            if (token.Kind == SyntaxKind.EndOfFile)
+            {
+                break;
+            }
+        }
+
+        this.tokens = tokens.DrainToImmutable();
+        diagnostics.AddRange(lexer.Diagnostics);
     }
+
+    internal static SyntaxTree Parse(in ReadOnlySequence<char> text)
+    {
+        var parser = new Parser(text);
+        var root = parser.ParseChunk();
+
+        return new SyntaxTree(text, parser.diagnostics.ToImmutableArray(), root);
+    }
+
+    SyntaxToken Current => Peek(0);
 
     SyntaxToken NextToken()
     {
-        var current = this.current;
-        this.current = peek ?? lexer.Lex();
-
-        if (peek is not null)
-            peek = null;
-
+        var current = Current;
+        position++;
         return current;
     }
 
-    SyntaxToken Peek()
+    SyntaxToken Peek(int offset = 1)
     {
-        peek ??= lexer.Lex();
-        return peek;
+        var tokens = this.tokens;
+        var index = position + offset;
+
+        if (index >= tokens.Length)
+            return tokens[^1];
+
+        return tokens[index];
     }
 
     SyntaxToken MatchToken(SyntaxKind kind)
     {
-        if (current.Kind == kind)
+        if (Current.Kind == kind)
             return NextToken();
 
-        Diagnostics.ReportUnexpectedToken(current.Location, kind, current.Kind);
-        return new SyntaxToken(kind, current.Location, true);
+        diagnostics.ReportUnexpectedToken(Current.Location, kind, Current.Kind);
+        return new SyntaxToken(kind, Current.Location, true);
     }
 
     bool CurrentIs(SyntaxKind kind, [NotNullWhen(true)] out SyntaxToken? token)
     {
-        if (current.Kind == kind)
+        if (Current.Kind == kind)
         {
             token = NextToken();
             return true;
@@ -58,7 +83,7 @@ public ref struct Parser
         return false;
     }
 
-    readonly bool IsNot(SyntaxKind kind) => current.Kind != kind && current.Kind != SyntaxKind.EndOfFile;
+    bool IsNot(SyntaxKind kind) => Current.Kind != kind && Current.Kind != SyntaxKind.EndOfFile;
 
     static bool StartsExpression(SyntaxToken token)
     {
@@ -87,7 +112,7 @@ public ref struct Parser
 
     bool BlockEnded()
     {
-        switch (current.Kind)
+        switch (Current.Kind)
         {
             case SyntaxKind.Semicolon:
                 // ParseStatement doesn't handle semicolon statements, so we skip over them here.
@@ -136,7 +161,7 @@ public ref struct Parser
     ///          local attnamelist ['=' explist] 
     /// </code>
     /// </summary>
-    StatementSyntax ParseStatement() => current.Kind switch
+    StatementSyntax ParseStatement() => Current.Kind switch
     {
         SyntaxKind.Break => ParseBreakStatement(),
         SyntaxKind.Goto => ParseGotoStatement(),
@@ -156,7 +181,7 @@ public ref struct Parser
     /// </summary>
     StatementSyntax ParseAssignmentOrCallStatement()
     {
-        var parserState = this;
+        var parserState = position;
 
         var prefixExpression = ParsePrefixExpression();
         switch (prefixExpression)
@@ -170,7 +195,7 @@ public ref struct Parser
                 // We need to return some kind of statement syntax, though.
                 // Back up to the state from before we parsed anything, then treat the following code like a function call statement.
                 // The errors will suggest adding invocation.
-                this = parserState;
+                position = parserState;
                 return new ExpressionStatementSyntax(ParseFunctionCallExpression());
         };
     }
@@ -291,7 +316,7 @@ public ref struct Parser
         var statements = ImmutableArray.CreateBuilder<StatementSyntax>();
 
         // Since Lua doesn't use curly braces or something similar, we need to scan to make sure
-        // the current block shouldn't be "over." Only certain tokens demarcate the end of a block
+        // the Current block shouldn't be "over." Only certain tokens demarcate the end of a block
         // in the Lua grammar. This code checks for any such token. This appears to pose a problem;
         // however, if someone writes code like:
         //     while <exp> do <block> until
@@ -299,19 +324,19 @@ public ref struct Parser
         // this is OK, and arguably gives better diagnostics in that scenario.
         while (!BlockEnded())
         {
-            var startToken = current;
+            var startToken = Current;
             
             statements.Add(ParseStatement());
 
             // This helps us get out of infinite loops if ParseStatement didn't consume any tokens.
-            if (current == startToken)
+            if (Current == startToken)
                 NextToken();
         }
 
         ReturnSyntax? @return = null;
         if (CurrentIs(SyntaxKind.Return, out var returnToken))
         {
-            var returnValues = StartsExpression(current) ? ParseExpressionList() : [];
+            var returnValues = StartsExpression(Current) ? ParseExpressionList() : [];
 
             CurrentIs(SyntaxKind.Semicolon, out var semi);
             @return = new ReturnSyntax(returnValues, From(returnToken, semi ?? GetLast(returnValues, returnToken)));
@@ -342,7 +367,7 @@ public ref struct Parser
 
         // Check if we're parsing a unary operator. If we are, we want to consume it
         // and apply it to the next expression.
-        var unaryOperatorPrecedence = SyntaxFacts.UnaryOperatorPrecedence(current.Kind);
+        var unaryOperatorPrecedence = SyntaxFacts.UnaryOperatorPrecedence(Current.Kind);
         if (unaryOperatorPrecedence != 0)
         {
             var operatorToken = NextToken();
@@ -356,8 +381,8 @@ public ref struct Parser
 
         while (true)
         {
-            var precedence = SyntaxFacts.BinaryOperatorPrecedence(current.Kind);
-            // We may have gotten here, where current isn't actually a binary operator (e.g. 'f(-5)').
+            var precedence = SyntaxFacts.BinaryOperatorPrecedence(Current.Kind);
+            // We may have gotten here, where Current isn't actually a binary operator (e.g. 'f(-5)').
             // In that case, we should bail, and simply return what we've got.
 
             // In the case that we are parsing another operator (e.g. '2 * 3 + 4'), we understandably must check for precedence.
@@ -384,14 +409,14 @@ public ref struct Parser
     /// <summary>
     /// Parses a "primary expression," which is simply any expression which can be made a part of a binary expression.
     /// </summary>
-    ExpressionSyntax ParsePrimaryExpression() => current.Kind switch
+    ExpressionSyntax ParsePrimaryExpression() => Current.Kind switch
     {
-        SyntaxKind.Nil => new LiteralExpressionSyntax(current, MatchToken(SyntaxKind.Nil).Location),
-        SyntaxKind.True => new LiteralExpressionSyntax(current, MatchToken(SyntaxKind.True).Location),
-        SyntaxKind.False => new LiteralExpressionSyntax(current, MatchToken(SyntaxKind.False).Location),
-        SyntaxKind.IntegerConstant => new LiteralExpressionSyntax(current, MatchToken(SyntaxKind.IntegerConstant).Location),
-        SyntaxKind.FloatConstant => new LiteralExpressionSyntax(current, MatchToken(SyntaxKind.FloatConstant).Location),
-        SyntaxKind.LiteralString => new LiteralExpressionSyntax(current, MatchToken(SyntaxKind.LiteralString).Location),
+        SyntaxKind.Nil => new LiteralExpressionSyntax(Current, MatchToken(SyntaxKind.Nil).Location),
+        SyntaxKind.True => new LiteralExpressionSyntax(Current, MatchToken(SyntaxKind.True).Location),
+        SyntaxKind.False => new LiteralExpressionSyntax(Current, MatchToken(SyntaxKind.False).Location),
+        SyntaxKind.IntegerConstant => new LiteralExpressionSyntax(Current, MatchToken(SyntaxKind.IntegerConstant).Location),
+        SyntaxKind.FloatConstant => new LiteralExpressionSyntax(Current, MatchToken(SyntaxKind.FloatConstant).Location),
+        SyntaxKind.LiteralString => new LiteralExpressionSyntax(Current, MatchToken(SyntaxKind.LiteralString).Location),
         SyntaxKind.DotDotDot => new VarargExpressionSyntax(MatchToken(SyntaxKind.DotDotDot).Location),
         SyntaxKind.OpenBrace => ParseTableConstructor(),
         SyntaxKind.Function => ParseFunctionExpression(),
@@ -423,16 +448,16 @@ public ref struct Parser
         // Prefix expressions start with either a Name token or parenthesized expression. Call, index, and dot expressions
         // are layered on top using the previously parsed prefix as the receiver. These repeated expressions are accumulated.
         PrefixExpressionSyntax prefix;
-        if (current.Kind is SyntaxKind.OpenParenthesis)
+        if (Current.Kind is SyntaxKind.OpenParenthesis)
         {
             prefix = ParseParenthesizedExpression();
 
-            if (StartsAccess(current))
+            if (StartsAccess(Current))
             {
                 // '(' exp ')' Access forces the choice var 
                 prefix = ParseVariableExpression(prefix);
             }
-            else if (StartsApplication(current))
+            else if (StartsApplication(Current))
             {
                 // '(' exp ')' Apply forces the choice functioncall 
                 prefix = ParseFunctionCallExpression(prefix);
@@ -443,7 +468,7 @@ public ref struct Parser
         {
             // If it's not parenthesized, we're either parsing a var or a functioncall which starts with a var
             prefix = ParseVariableExpression();
-            if (StartsApplication(current))
+            if (StartsApplication(Current))
             {
                 // var Apply forces the choice functioncall
                 prefix = ParseFunctionCallExpression(prefix);
@@ -463,7 +488,7 @@ public ref struct Parser
         // var ::= name Access* (Apply* Access+)* | '(' exp ')' Access* (Apply* Access+)+
 
         // Because the initial receiver may be a parenthesized expression, we need a separate variable to store
-        // the current receiver and the variable expression which we are parsing.
+        // the Current receiver and the variable expression which we are parsing.
         VariableExpressionSyntax? variable = null;
         PrefixExpressionSyntax receiver;
 
@@ -476,7 +501,7 @@ public ref struct Parser
             receiver = parenthesizedReceiver;
             mustParseAccess = true;
         }
-        else if (current.Kind is SyntaxKind.OpenParenthesis)
+        else if (Current.Kind is SyntaxKind.OpenParenthesis)
         {
             receiver = ParseParenthesizedExpression();
             mustParseAccess = true;
@@ -487,7 +512,7 @@ public ref struct Parser
         }
         
         // Parse Access*
-        while (StartsAccess(current))
+        while (StartsAccess(Current))
         {
             receiver = variable = ParseAccess(receiver);
 
@@ -497,12 +522,12 @@ public ref struct Parser
 
         // Parse (Apply* Access+)
         // Ensure we parse at least one if necessary
-        while (mustParseAccess || StartsApplication(current) || StartsAccess(current))
+        while (mustParseAccess || StartsApplication(Current) || StartsAccess(Current))
         {
-            var parserState = this;
+            var parserState = position;
             
             // Parse Apply*
-            while (StartsApplication(current))
+            while (StartsApplication(Current))
             {
                 receiver = ParseApplication(receiver);
             }
@@ -511,18 +536,18 @@ public ref struct Parser
             // If this is a call expression, we need to parse up to but not including the last Apply expression, so that the
             // accumulated variable expression can be passed as the receiver to ParseFunctionCallExpression.
             // In that case, we need to rewind the parser to before the Apply expressions we parsed and break out.
-            if (mustParseAccess || StartsAccess(current))
+            if (mustParseAccess || StartsAccess(Current))
             {
                 do
                 {
                     receiver = variable = ParseAccess(receiver);
-                } while (StartsAccess(current));
+                } while (StartsAccess(Current));
 
                 mustParseAccess = false;
             }
             else
             {
-                this = parserState;
+                position = parserState;
                 break;
             }
         }
@@ -538,7 +563,7 @@ public ref struct Parser
     CallExpressionSyntax ParseFunctionCallExpression(PrefixExpressionSyntax? receiver = null)
     {
         receiver ??=
-            current.Kind is SyntaxKind.OpenParenthesis 
+            Current.Kind is SyntaxKind.OpenParenthesis 
             ? ParseParenthesizedExpression()
             : ParseVariableExpression(); 
 
@@ -546,7 +571,7 @@ public ref struct Parser
         do
         {
             receiver = call = ParseApplication(receiver);
-        } while (StartsApplication(current));
+        } while (StartsApplication(Current));
 
         return call;
     }
@@ -617,12 +642,12 @@ public ref struct Parser
     /// <param name="end">The last token of the argument list.</param>
     ImmutableArray<ExpressionSyntax> ParseCallArguments(out SyntaxNode end)
     {
-        switch (current.Kind)
+        switch (Current.Kind)
         {
             default:
             case SyntaxKind.OpenParenthesis:
                 NextToken();
-                var args = current.Kind != SyntaxKind.CloseParenthesis ? ParseExpressionList() : [];
+                var args = Current.Kind != SyntaxKind.CloseParenthesis ? ParseExpressionList() : [];
                 end = MatchToken(SyntaxKind.CloseParenthesis);
                 return args;
 
@@ -665,7 +690,7 @@ public ref struct Parser
         {
             SyntaxNode target;
             ExpressionSyntax? value = null;
-            switch (current.Kind)
+            switch (Current.Kind)
             {
                 case SyntaxKind.OpenBracket:
                     MatchToken(SyntaxKind.OpenBracket);
@@ -688,7 +713,7 @@ public ref struct Parser
 
             statements.Add(new FieldAssignmentSyntax(target, value, From(target, value ?? target)));
 
-            if (current.Kind is SyntaxKind.Semicolon or SyntaxKind.Comma)
+            if (Current.Kind is SyntaxKind.Semicolon or SyntaxKind.Comma)
             {
                 NextToken();
             }
@@ -710,7 +735,7 @@ public ref struct Parser
         ImmutableArray<SyntaxToken> names;
         bool isVararg;
 
-        if (current.Kind is not SyntaxKind.CloseParenthesis)
+        if (Current.Kind is not SyntaxKind.CloseParenthesis)
         {
             names = ParseParameterList(out isVararg);
         }
@@ -733,7 +758,7 @@ public ref struct Parser
     /// <param name="isVarargs">Returns whether the parameter list includes a varargs expression.</param>
     ImmutableArray<SyntaxToken> ParseParameterList(out bool isVarargs)
     {
-        if (current.Kind is SyntaxKind.DotDotDot)
+        if (Current.Kind is SyntaxKind.DotDotDot)
         {
             NextToken();
             isVarargs = true;
@@ -741,7 +766,7 @@ public ref struct Parser
         }
 
         var list = ParseNameList();
-        if (current.Kind is SyntaxKind.Comma && Peek().Kind is SyntaxKind.DotDotDot)
+        if (Current.Kind is SyntaxKind.Comma && Peek().Kind is SyntaxKind.DotDotDot)
         {
             NextToken();
             NextToken();
@@ -763,7 +788,7 @@ public ref struct Parser
     {
         var statements = ImmutableArray.CreateBuilder<SyntaxToken>();
         statements.Add(MatchToken(SyntaxKind.Name));
-        while (current.Kind is SyntaxKind.Comma && Peek().Kind is SyntaxKind.Name)
+        while (Current.Kind is SyntaxKind.Comma && Peek().Kind is SyntaxKind.Name)
         {
             NextToken();
             statements.Add(NextToken());
@@ -863,7 +888,7 @@ public ref struct Parser
 
         while (true)
         {
-            switch (current.Kind)
+            switch (Current.Kind)
             {
                 case SyntaxKind.ElseIf:
                     var elif = MatchToken(SyntaxKind.ElseIf);

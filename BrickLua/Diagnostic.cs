@@ -1,5 +1,4 @@
-﻿using System.Buffers;
-using System.Collections;
+﻿using System.Collections.ObjectModel;
 
 using BrickLua.CodeAnalysis.Syntax;
 
@@ -10,24 +9,18 @@ public sealed record Diagnostic(in SequenceRange Location, string Message)
     public override string ToString() => Message;
 }
 
-public sealed class DiagnosticBag : IEnumerable<Diagnostic>
+internal sealed class DiagnosticBag : ReadOnlyCollection<Diagnostic>
 {
-    public DiagnosticBag(in ReadOnlySequence<char> text)
+    private readonly List<Diagnostic> diagnostics;
+
+    public DiagnosticBag() : base([])
     {
-        this.text = text;
+        diagnostics = (List<Diagnostic>)Items;
     }
 
-    private readonly List<Diagnostic> diagnostics = new();
-    public ref readonly ReadOnlySequence<char> Text => ref text;
-    ReadOnlySequence<char> text;
-
-    public IEnumerator<Diagnostic> GetEnumerator() => diagnostics.GetEnumerator();
-
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-    public void AddRange(DiagnosticBag diagnostics)
+    public void AddRange(IEnumerable<Diagnostic> diagnostics)
     {
-        this.diagnostics.AddRange(diagnostics.diagnostics);
+        this.diagnostics.AddRange(diagnostics);
     }
 
     void Report(in SequenceRange location, string message)
