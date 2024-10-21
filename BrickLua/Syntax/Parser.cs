@@ -490,6 +490,9 @@ public ref struct Parser
         while (StartsAccess(current))
         {
             receiver = variable = ParseAccess(receiver);
+
+            // If we do parse an Access, treat it as if we had parsed an (Apply* Access+) with no Apply
+            mustParseAccess = false;
         }
 
         // Parse (Apply* Access+)
@@ -871,7 +874,7 @@ public ref struct Parser
                     break;
 
                 case SyntaxKind.Else:
-                    var @else = MatchToken(SyntaxKind.If);
+                    var @else = MatchToken(SyntaxKind.Else);
                     var elseBody = ParseBlock();
                     elseClause = new ElseClauseSyntax(elseBody, From(@else, GetLast(body.Body, @else)));
                     break;
@@ -882,7 +885,8 @@ public ref struct Parser
             }
         }
 
-    exit:
+        exit:
+        MatchToken(SyntaxKind.End);
 
         var clauses = elseIfClauses.DrainToImmutable();
         return new IfStatementSyntax(expr, body, clauses, elseClause,
