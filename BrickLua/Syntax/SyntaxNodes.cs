@@ -18,7 +18,7 @@ public sealed record DoStatementSyntax(BlockSyntax Body, in SequenceRange Locati
 
 public sealed record ElseClauseSyntax(BlockSyntax Body, in SequenceRange Location) : SyntaxNode(Location);
 
-public sealed record ElseIfClauseSyntax(ExpressionSyntax Test, BlockSyntax Consequent, in SequenceRange Location) : SyntaxNode(Location);
+public sealed record ElseIfClauseSyntax(ExpressionSyntax Condition, BlockSyntax Consequent, in SequenceRange Location) : SyntaxNode(Location);
 
 public sealed record ForStatementSyntax(ImmutableArray<SyntaxToken> NameList, ImmutableArray<ExpressionSyntax> ExpressionList, 
     BlockSyntax Body, in SequenceRange Location) : StatementSyntax(Location);
@@ -50,7 +50,7 @@ public sealed record RepeatStatementSyntax(BlockSyntax Body, ExpressionSyntax Co
 
 public sealed record ReturnSyntax(ImmutableArray<ExpressionSyntax> ReturnValues, in SequenceRange Location) : SyntaxNode(Location);
 
-public sealed record WhileStatementExpression(ExpressionSyntax Condition, BlockSyntax Body, in SequenceRange Location) : StatementSyntax(Location);
+public sealed record WhileStatementSyntax(ExpressionSyntax Condition, BlockSyntax Body, in SequenceRange Location) : StatementSyntax(Location);
 
 public sealed record ExpressionStatementSyntax(ExpressionSyntax Expression) : StatementSyntax(Expression.Location);
 
@@ -66,7 +66,7 @@ public sealed record LiteralExpressionSyntax(SyntaxToken Value, in SequenceRange
 public sealed record TableConstructorExpressionSyntax(ImmutableArray<FieldAssignmentSyntax> FieldAssignments, in SequenceRange Location) :
     ExpressionSyntax(Location);
 
-public sealed record FieldAssignmentSyntax(SyntaxNode Field, ExpressionSyntax? Value, in SequenceRange Location) : SyntaxNode(Location);
+public sealed record FieldAssignmentSyntax(SyntaxNode? Field, ExpressionSyntax Value, in SequenceRange Location) : SyntaxNode(Location);
 
 public sealed record UnaryExpressionSyntax(SyntaxKind Operator, ExpressionSyntax Operand, in SequenceRange Location) : ExpressionSyntax(Location);
 

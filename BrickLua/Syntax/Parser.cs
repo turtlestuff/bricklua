@@ -688,30 +688,30 @@ internal sealed class Parser
         var start = MatchToken(SyntaxKind.OpenBrace);
         while (IsNot(SyntaxKind.CloseBrace))
         {
-            SyntaxNode target;
-            ExpressionSyntax? value = null;
+            SyntaxNode? field = null;
+            ExpressionSyntax value;
             switch (Current.Kind)
             {
                 case SyntaxKind.OpenBracket:
                     MatchToken(SyntaxKind.OpenBracket);
-                    target = ParseExpression();
+                    field = ParseExpression();
                     MatchToken(SyntaxKind.CloseBracket);
                     MatchToken(SyntaxKind.Equals);
                     value = ParseExpression();
                     break;
 
                 case SyntaxKind.Name when Peek().Kind == SyntaxKind.Equals:
-                    target = MatchToken(SyntaxKind.Name);
+                    field = MatchToken(SyntaxKind.Name);
                     MatchToken(SyntaxKind.Equals);
                     value = ParseExpression();
                     break;
 
                 default:
-                    target = ParseExpression();
+                    value = ParseExpression();
                     break;
             }
 
-            statements.Add(new FieldAssignmentSyntax(target, value, From(target, value ?? target)));
+            statements.Add(new FieldAssignmentSyntax(field, value, From(field ?? value, value)));
 
             if (Current.Kind is SyntaxKind.Semicolon or SyntaxKind.Comma)
             {
@@ -848,7 +848,7 @@ internal sealed class Parser
     /// <summary>
     /// Parses a while statement of the form <c>while exp do block end</c>.
     /// </summary>
-    WhileStatementExpression ParseWhileStatement()
+    WhileStatementSyntax ParseWhileStatement()
     {
         var @while = MatchToken(SyntaxKind.While);
         var expression = ParseExpression();
@@ -856,7 +856,7 @@ internal sealed class Parser
         var body = ParseBlock();
         var end = MatchToken(SyntaxKind.End);
 
-        return new WhileStatementExpression(expression, body, From(@while, end));
+        return new WhileStatementSyntax(expression, body, From(@while, end));
     }
 
 

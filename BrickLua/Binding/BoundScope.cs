@@ -37,5 +37,4 @@ internal sealed class BoundScope(BoundScope? parent)
     {
         return variables.Values.ToImmutableArray();
     }
-
 }
