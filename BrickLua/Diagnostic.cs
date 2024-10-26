@@ -50,5 +50,8 @@ internal sealed class DiagnosticBag : ReadOnlyCollection<Diagnostic>
 
     internal void ReportUnexpectedToken(in SequenceRange location, SyntaxKind expected, SyntaxKind actual) => 
         Report(location, $"Unexpected token <{actual}>, expected <{expected}>.");
+
+    internal void ReportUnexpectedBreak(in SequenceRange location) =>
+        Report(location, $"Unexpected break statement outside of loop.");
 }
 

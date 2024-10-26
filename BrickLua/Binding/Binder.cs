@@ -10,7 +10,7 @@ internal sealed class Binder
 {
     private BoundScope scope;
 
-    private Stack<BoundLabel> breakLabelStack = [];
+    private readonly Stack<BoundLabel> breakLabelStack = [];
     private int loopCounter;
 
     private readonly DiagnosticBag diagnostics = new();
@@ -25,7 +25,7 @@ internal sealed class Binder
         var binder = new Binder();
         binder.diagnostics.AddRange(chunk.Diagnostics);
 
-        binder.scope.TryDeclare(new LocalSymbol("_ENV"));
+        binder.scope.Declare(new LocalSymbol("_ENV"));
         var block = binder.BindBlock(chunk.Root.Body);
         return new BoundChunk(block, binder.diagnostics.ToImmutableArray());
     }
@@ -80,12 +80,6 @@ internal sealed class Binder
             controlVariable ??= DeclareVariable(name);
         }
 
-        if (controlVariable is null)
-        {
-            // Diagnostic
-            return BindErrorStatement();
-        }
-
         var boundExpressions = ImmutableArray.CreateBuilder<BoundExpression>();
         foreach (var exp in f.ExpressionList)
         {
@@ -96,7 +90,7 @@ internal sealed class Binder
     
         scope = scope.Parent!;
 
-        return new BoundForStatement(controlVariable, boundExpressions.DrainToImmutable(), body, breakLabel);
+        return new BoundForStatement(controlVariable!, boundExpressions.DrainToImmutable(), body, breakLabel);
     }
 
     private BoundStatement BindNumericalForStatement(NumericalForStatementSyntax f)
@@ -169,7 +163,7 @@ internal sealed class Binder
 
         foreach (var param in body.ParameterNames)
         {
-            scope.TryDeclare(new LocalSymbol(param.Value!.ToString()!));
+            scope.Declare(new LocalSymbol(param.Value!.ToString()!));
         }
 
         var bodyBlock = BindBlock(body.Body, newScope: false);
@@ -216,6 +210,7 @@ internal sealed class Binder
     {
         if (breakLabelStack.Count == 0)
         {
+            diagnostics.ReportUnexpectedBreak(@break.Location);
             return BindErrorStatement();
         }
 
@@ -374,12 +369,6 @@ internal sealed class Binder
         var boundOperand = BindExpression(syntax.Operand);
         var boundOperator = BoundUnaryOperator.Bind(syntax.Operator);
 
-        if (boundOperator is null)
-        {
-            // Diagnostic
-            return boundOperand;
-        }
-
         return new BoundUnaryExpression(boundOperator, boundOperand);
     }
 
@@ -388,12 +377,6 @@ internal sealed class Binder
         var boundLeft = BindExpression(syntax.Left);
         var boundRight = BindExpression(syntax.Right);
         var boundOperator = BoundBinaryOperator.Bind(syntax.Operator);
-
-        if (boundOperator is null)
-        {
-            // Diagnostic
-            return boundLeft;
-        }
 
         return new BoundBinaryExpression(boundLeft, boundOperator, boundRight);
     }
@@ -413,15 +396,8 @@ internal sealed class Binder
         var name = identifier.Value!.ToString()!;
         var local = new LocalSymbol(name);
 
-        if (scope.TryDeclare(local))
-        {
-            return local;
-        }
-        else
-        {
-            // Diagnostic?
-            return local;
-        }
+        scope.Declare(local);
+        return local;
     }
 
     LocalSymbol? LookupVariable(SyntaxToken identifier)
@@ -434,7 +410,6 @@ internal sealed class Binder
         }
         else 
         {
-            // Diagnostic
             return null;
         }
     }

@@ -12,9 +12,9 @@ internal sealed class BoundScope(BoundScope? parent)
 
     public BoundScope? Parent { get; } = parent;
 
-    public bool TryDeclare(LocalSymbol variable)
+    public void Declare(LocalSymbol variable)
     {
-        return variables.TryAdd(variable.Name, variable);
+        variables[variable.Name] = variable;
     }
 
     public bool TryLookup(string name, out LocalSymbol variable)

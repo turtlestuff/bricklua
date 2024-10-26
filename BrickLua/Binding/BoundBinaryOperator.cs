@@ -1,34 +1,37 @@
-﻿using BrickLua.CodeAnalysis.Syntax;
+﻿using System.Collections.Frozen;
+
+using BrickLua.CodeAnalysis.Syntax;
 
 namespace BrickLua.CodeAnalysis.Binding;
 
-internal sealed record BoundBinaryOperator(BoundBinaryOperatorKind Kind, SyntaxKind SyntaxKind)
+internal sealed record BoundBinaryOperator(BoundBinaryOperatorKind Kind)
 {
-    private static readonly BoundBinaryOperator[] operators =
-    {
-        new BoundBinaryOperator(BoundBinaryOperatorKind.LogicalOr, SyntaxKind.Or),
-        new BoundBinaryOperator(BoundBinaryOperatorKind.LogicalAnd, SyntaxKind.And),
-        new BoundBinaryOperator(BoundBinaryOperatorKind.LessThan, SyntaxKind.Less),
-        new BoundBinaryOperator(BoundBinaryOperatorKind.LessThanOrEqualTo, SyntaxKind.LessEquals),
-        new BoundBinaryOperator(BoundBinaryOperatorKind.GreaterThanOrEqualTo, SyntaxKind.GreaterEquals),
-        new BoundBinaryOperator(BoundBinaryOperatorKind.NotEqualTo, SyntaxKind.TildeEquals),
-        new BoundBinaryOperator(BoundBinaryOperatorKind.EqualTo, SyntaxKind.EqualsEquals),
-        new BoundBinaryOperator(BoundBinaryOperatorKind.BitwiseOr, SyntaxKind.Pipe),
-        new BoundBinaryOperator(BoundBinaryOperatorKind.BitwiseXor, SyntaxKind.Tilde),
-        new BoundBinaryOperator(BoundBinaryOperatorKind.BitwiseAnd, SyntaxKind.Ampersand),
-        new BoundBinaryOperator(BoundBinaryOperatorKind.ShiftLeft, SyntaxKind.LessLess),
-        new BoundBinaryOperator(BoundBinaryOperatorKind.ShiftRight, SyntaxKind.GreaterGreater),
-        new BoundBinaryOperator(BoundBinaryOperatorKind.Concatenation, SyntaxKind.DotDot),
-        new BoundBinaryOperator(BoundBinaryOperatorKind.Addition, SyntaxKind.Plus),
-        new BoundBinaryOperator(BoundBinaryOperatorKind.Subtraction, SyntaxKind.Minus),
-        new BoundBinaryOperator(BoundBinaryOperatorKind.Multiplication, SyntaxKind.Asterisk),
-        new BoundBinaryOperator(BoundBinaryOperatorKind.FloatDivision, SyntaxKind.Slash),
-        new BoundBinaryOperator(BoundBinaryOperatorKind.FloorDivision, SyntaxKind.SlashSlash),
-        new BoundBinaryOperator(BoundBinaryOperatorKind.Modulus, SyntaxKind.Percent),
-        new BoundBinaryOperator(BoundBinaryOperatorKind.Exponentiation, SyntaxKind.Caret),
-    };
+    private static readonly FrozenDictionary<SyntaxKind, BoundBinaryOperator> operators =
+        new Dictionary<SyntaxKind, BoundBinaryOperator>
+        {
+            { SyntaxKind.Or, new(BoundBinaryOperatorKind.LogicalOr) },
+            { SyntaxKind.And, new(BoundBinaryOperatorKind.LogicalAnd) },
+            { SyntaxKind.Less, new(BoundBinaryOperatorKind.LessThan) },
+            { SyntaxKind.LessEquals, new(BoundBinaryOperatorKind.LessThanOrEqualTo) },
+            { SyntaxKind.GreaterEquals, new(BoundBinaryOperatorKind.GreaterThanOrEqualTo) },
+            { SyntaxKind.TildeEquals, new(BoundBinaryOperatorKind.NotEqualTo) },
+            { SyntaxKind.EqualsEquals, new(BoundBinaryOperatorKind.EqualTo) },
+            { SyntaxKind.Pipe, new(BoundBinaryOperatorKind.BitwiseOr) },
+            { SyntaxKind.Tilde, new(BoundBinaryOperatorKind.BitwiseXor) },
+            { SyntaxKind.Ampersand, new(BoundBinaryOperatorKind.BitwiseAnd) },
+            { SyntaxKind.LessLess, new(BoundBinaryOperatorKind.ShiftLeft) },
+            { SyntaxKind.GreaterGreater, new(BoundBinaryOperatorKind.ShiftRight) },
+            { SyntaxKind.DotDot, new(BoundBinaryOperatorKind.Concatenation) },
+            { SyntaxKind.Plus, new(BoundBinaryOperatorKind.Addition) },
+            { SyntaxKind.Minus, new(BoundBinaryOperatorKind.Subtraction) },
+            { SyntaxKind.Asterisk, new(BoundBinaryOperatorKind.Multiplication) },
+            { SyntaxKind.Slash, new(BoundBinaryOperatorKind.FloatDivision) },
+            { SyntaxKind.SlashSlash, new(BoundBinaryOperatorKind.FloorDivision) },
+            { SyntaxKind.Percent, new(BoundBinaryOperatorKind.Modulus) },
+            { SyntaxKind.Caret, new(BoundBinaryOperatorKind.Exponentiation) },
+        }.ToFrozenDictionary();
 
-    public static BoundBinaryOperator? Bind(SyntaxKind syntaxKind) => operators.FirstOrDefault(x => x.SyntaxKind == syntaxKind);
+    public static BoundBinaryOperator Bind(SyntaxKind syntaxKind) => operators[syntaxKind];
 }
 
 internal enum BoundBinaryOperatorKind
