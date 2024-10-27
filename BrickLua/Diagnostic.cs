@@ -53,5 +53,8 @@ internal sealed class DiagnosticBag : ReadOnlyCollection<Diagnostic>
 
     internal void ReportUnexpectedBreak(in SequenceRange location) =>
         Report(location, $"Unexpected break statement outside of loop.");
+
+    internal void ReportUndefinedLabel(in SequenceRange location, SyntaxToken name) =>
+        Report(location, $"Unexpected use of undefined label '{name}'.");
 }
 

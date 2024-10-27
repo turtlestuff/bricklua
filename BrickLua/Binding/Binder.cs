@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Reflection.Metadata.Ecma335;
 
 using BrickLua.CodeAnalysis.Symbols;
 using BrickLua.CodeAnalysis.Syntax;
@@ -10,7 +11,7 @@ internal sealed class Binder
 {
     private BoundScope scope;
 
-    private readonly Stack<BoundLabel> breakLabelStack = [];
+    private readonly Stack<LabelSymbol> breakLabelStack = [];
     private int loopCounter;
 
     private readonly DiagnosticBag diagnostics = new();
@@ -41,6 +42,15 @@ internal sealed class Binder
 
         foreach (var statement in block.Body)
         {
+            if (statement is GotoStatementSyntax g)
+            {
+                var label = DeclareLabel(g.Label);
+                scope.Declare(label);
+            }
+        }
+
+        foreach (var statement in block.Body)
+        {
             statements.Add(BindStatement(statement));
         }
 
@@ -62,13 +72,33 @@ internal sealed class Binder
         BreakStatementSyntax b => BindBreakStatement(b),
         DoStatementSyntax d => BindDoStatement(d),
         FunctionStatementSyntax f => BindFunctionStatement(f),
-        // GotoStatementSyntax g => BindGotoStatement(g),
-        // LabelStatementSyntax l => BindLabelStatement(l),
+        GotoStatementSyntax g => BindGotoStatement(g),
+        LabelStatementSyntax l => BindLabelStatement(l),
         LocalDeclarationStatementSyntax l => BindLocalDeclarationStatement(l),
         LocalFunctionStatementSyntax l => BindLocalFunctionStatement(l),
         RepeatStatementSyntax r => BindRepeatStatement(r),
         ExpressionStatementSyntax e => BindExpressionStatement(e),
     };
+
+    BoundStatement BindLabelStatement(LabelStatementSyntax l)
+    {
+        var label = LookupLabel(l.Name);
+        return new LabelSymbolStatement(label!);
+    }
+
+    BoundStatement BindGotoStatement(GotoStatementSyntax g)
+    {
+        var label = LookupLabel(g.Label);
+
+        if (label is null)
+        {
+            diagnostics.ReportUndefinedLabel(g.Location, g.Label);
+            return BindErrorStatement();
+        }
+
+        return new BoundGotoStatement(label);
+    }
+
 
     private BoundStatement BindForStatement(ForStatementSyntax f)
     {
@@ -136,7 +166,10 @@ internal sealed class Binder
 
     BoundStatement BindRepeatStatement(RepeatStatementSyntax r)
     {
-        return new BoundRepeatStatement(BindExpression(r.Condition), BindBlock(r.Body));
+        var condition = BindExpression(r.Condition);
+
+        var body = BindLoopBody(r.Body, out var breakLabel, newScope: true);
+        return new BoundRepeatStatement(condition, body, breakLabel);
     }
 
     BoundStatement BindLocalDeclarationStatement(LocalDeclarationStatementSyntax local)
@@ -159,7 +192,7 @@ internal sealed class Binder
 
     BoundFunctionExpression BindFunctionBody(FunctionBody body)
     {
-        scope = new BoundScope(scope);
+        scope = new BoundScope(scope, stopLabelSearch: true);
 
         foreach (var param in body.ParameterNames)
         {
@@ -228,10 +261,10 @@ internal sealed class Binder
     }
 
 
-    BoundBlock BindLoopBody(BlockSyntax body, out BoundLabel breakLabel, bool newScope)
+    BoundBlock BindLoopBody(BlockSyntax body, out LabelSymbol breakLabel, bool newScope)
     {
         loopCounter++;
-        breakLabel = new BoundLabel($"break{loopCounter}");
+        breakLabel = new LabelSymbol($"break{loopCounter}");
 
         breakLabelStack.Push(breakLabel);
         var boundBody = BindBlock(body, newScope);
@@ -400,11 +433,35 @@ internal sealed class Binder
         return local;
     }
 
+    LabelSymbol DeclareLabel(SyntaxToken identifier)
+    {
+        var name = identifier.Value!.ToString()!;
+        var local = new LabelSymbol(name);
+
+        scope.Declare(local);
+        return local;
+    }
+
+
     LocalSymbol? LookupVariable(SyntaxToken identifier)
     {
         var name = identifier.Value!.ToString()!;
 
-        if (scope.TryLookup(name, out var symbol))
+        if (scope.TryLookup(name, out LocalSymbol symbol))
+        {
+            return symbol;
+        }
+        else 
+        {
+            return null;
+        }
+    }
+
+    LabelSymbol? LookupLabel(SyntaxToken identifier)
+    {
+        var name = identifier.Value!.ToString()!;
+
+        if (scope.TryLookup(name, out LabelSymbol symbol))
         {
             return symbol;
         }

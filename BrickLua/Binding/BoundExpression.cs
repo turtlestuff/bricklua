@@ -32,11 +32,11 @@ internal sealed record BoundExpressionStatement(BoundExpression Expression) : Bo
 internal sealed record BoundAssignmentStatement(ImmutableArray<BoundVariableExpression> Variables, ImmutableArray<BoundExpression> Expressions) : BoundStatement;
 internal sealed record BoundIfStatement(BoundExpression Condition, BoundBlock Consequent, ImmutableArray<BoundElseIfClause> ElseIfClauses, BoundBlock? ElseClause) : BoundStatement;
 internal sealed record BoundElseIfClause(BoundExpression Condition, BoundBlock Consequent);
-internal sealed record BoundWhileStatement(BoundExpression Condition, BoundBlock Body, BoundLabel BreakLabel) : BoundStatement;
-internal sealed record BoundForStatement(LocalSymbol ControlVariable, ImmutableArray<BoundExpression> ExpressionList, BoundBlock Body, BoundLabel BreakLabel) : BoundStatement;
-internal sealed record BoundNumericalForStatement(BoundExpression InitialValue, BoundExpression Limit, BoundExpression Step, LocalSymbol IndexVariable, BoundBlock Body, BoundLabel BreakLabel) : BoundStatement;
-internal sealed record BoundGotoStatement(BoundLabel Label) : BoundStatement;
+internal sealed record BoundWhileStatement(BoundExpression Condition, BoundBlock Body, LabelSymbol BreakLabel) : BoundStatement;
+internal sealed record BoundForStatement(LocalSymbol ControlVariable, ImmutableArray<BoundExpression> ExpressionList, BoundBlock Body, LabelSymbol BreakLabel) : BoundStatement;
+internal sealed record BoundNumericalForStatement(BoundExpression InitialValue, BoundExpression Limit, BoundExpression Step, LocalSymbol IndexVariable, BoundBlock Body, LabelSymbol BreakLabel) : BoundStatement;
+internal sealed record BoundGotoStatement(LabelSymbol Label) : BoundStatement;
+internal sealed record LabelSymbolStatement(LabelSymbol Label) : BoundStatement;
 internal sealed record BoundDoStatement(BoundBlock Body) : BoundStatement;
-internal sealed record BoundRepeatStatement(BoundExpression Condition, BoundBlock Body) : BoundStatement;
-internal sealed record BoundLabelStatement(string Name) : BoundStatement;
+internal sealed record BoundRepeatStatement(BoundExpression Condition, BoundBlock Body, LabelSymbol BreakLabel) : BoundStatement;
 internal sealed record BoundLocalDeclarationStatement(ImmutableArray<BoundVariableExpression> Variables, ImmutableArray<BoundExpression> Expressions);
