@@ -36,7 +36,6 @@ internal sealed record BoundWhileStatement(BoundExpression Condition, BoundBlock
 internal sealed record BoundForStatement(LocalSymbol ControlVariable, ImmutableArray<BoundExpression> ExpressionList, BoundBlock Body, LabelSymbol BreakLabel) : BoundStatement;
 internal sealed record BoundNumericalForStatement(BoundExpression InitialValue, BoundExpression Limit, BoundExpression Step, LocalSymbol IndexVariable, BoundBlock Body, LabelSymbol BreakLabel) : BoundStatement;
 internal sealed record BoundGotoStatement(LabelSymbol Label) : BoundStatement;
-internal sealed record LabelSymbolStatement(LabelSymbol Label) : BoundStatement;
+internal sealed record BoundLabelStatement(LabelSymbol Label) : BoundStatement;
 internal sealed record BoundDoStatement(BoundBlock Body) : BoundStatement;
 internal sealed record BoundRepeatStatement(BoundExpression Condition, BoundBlock Body, LabelSymbol BreakLabel) : BoundStatement;
-internal sealed record BoundLocalDeclarationStatement(ImmutableArray<BoundVariableExpression> Variables, ImmutableArray<BoundExpression> Expressions);

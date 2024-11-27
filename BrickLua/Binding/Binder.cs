@@ -83,7 +83,7 @@ internal sealed class Binder
     BoundStatement BindLabelStatement(LabelStatementSyntax l)
     {
         var label = LookupLabel(l.Name);
-        return new LabelSymbolStatement(label!);
+        return new BoundLabelStatement(label!);
     }
 
     BoundStatement BindGotoStatement(GotoStatementSyntax g)
@@ -212,7 +212,6 @@ internal sealed class Binder
         var body = BindFunctionBody(l.Body);
         return new BoundAssignmentStatement([new BoundNameExpression(local)], [body]);
     }
-
 
     BoundStatement BindFunctionStatement(FunctionStatementSyntax function)
     {
