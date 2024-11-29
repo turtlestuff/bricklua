@@ -4,6 +4,8 @@ using System.Diagnostics;
 using BrickLua.CodeAnalysis.Symbols;
 using BrickLua.CodeAnalysis.Syntax;
 
+using static BrickLua.CodeAnalysis.Binding.BoundNodeFactory;
+
 namespace BrickLua.CodeAnalysis.Binding;
 
 internal sealed class Binder
@@ -27,7 +29,7 @@ internal sealed class Binder
 
         binder.scope.Declare(new LocalSymbol("_ENV"));
         var block = binder.BindBlock(chunk.Root.Body);
-        return new BoundChunk(block, binder.diagnostics.ToImmutableArray());
+        return Chunk(block, binder.diagnostics.ToImmutableArray());
     }
 
     BoundBlock BindBlock(BlockSyntax block, bool newScope = true)
@@ -82,7 +84,7 @@ internal sealed class Binder
     BoundStatement BindLabelStatement(LabelStatementSyntax l)
     {
         var label = LookupLabel(l.Name);
-        return new BoundLabelStatement(label!);
+        return Label(label!);
     }
 
     BoundStatement BindGotoStatement(GotoStatementSyntax g)
@@ -95,7 +97,7 @@ internal sealed class Binder
             return BindErrorStatement();
         }
 
-        return new BoundGotoStatement(label);
+        return Goto(label);
     }
 
 
@@ -103,10 +105,14 @@ internal sealed class Binder
     {
         scope = new BoundScope(scope);
 
+        var variables = ImmutableArray.CreateBuilder<BoundNameExpression>();
+
         LocalSymbol? controlVariable = null;
         foreach (var name in f.NameList)
         {
-            controlVariable ??= DeclareVariable(name);
+            var v = DeclareVariable(name);
+            variables.Add(Name(v));
+            controlVariable ??= v; 
         }
 
         var boundExpressions = ImmutableArray.CreateBuilder<BoundExpression>();
@@ -119,14 +125,14 @@ internal sealed class Binder
     
         scope = scope.Parent!;
 
-        return new BoundForStatement(controlVariable!, boundExpressions.DrainToImmutable(), body, breakLabel);
+        return For(variables.DrainToImmutable(), boundExpressions.DrainToImmutable(), body, breakLabel);
     }
 
     private BoundStatement BindNumericalForStatement(NumericalForStatementSyntax f)
     {
         var initialValue = BindExpression(f.InitialValue);
         var limit = BindExpression(f.Limit);
-        var step = f.Step is not null ? BindExpression(f.Step) : new BoundLiteralExpression(1);
+        var step = f.Step is not null ? BindExpression(f.Step) : Literal(1);
 
         scope = new BoundScope(scope);
 
@@ -136,7 +142,7 @@ internal sealed class Binder
     
         scope = scope.Parent!;
 
-        return new BoundNumericalForStatement(initialValue, limit, step, indexVariable, body, breakLabel);
+        return NumericalFor(initialValue, limit, step, indexVariable, body, breakLabel);
     }
 
 
@@ -149,13 +155,13 @@ internal sealed class Binder
         var boundElseIfClauses = ImmutableArray.CreateBuilder<BoundElseIfClause>();
         foreach (var clause in i.ElseIfClauses)
         {
-            boundElseIfClauses.Add(new BoundElseIfClause(
+            boundElseIfClauses.Add(ElseIfClause(
                 BindExpression(clause.Condition),
                 BindBlock(clause.Consequent)
             ));
         }
 
-        return new BoundIfStatement(
+        return If(
             condition,
             consequent,
             boundElseIfClauses.DrainToImmutable(),
@@ -168,7 +174,7 @@ internal sealed class Binder
         var condition = BindExpression(r.Condition);
 
         var body = BindLoopBody(r.Body, out var breakLabel, newScope: true);
-        return new BoundRepeatStatement(condition, body, breakLabel);
+        return Repeat(condition, body, breakLabel);
     }
 
     BoundStatement BindLocalDeclarationStatement(LocalDeclarationStatementSyntax local)
@@ -177,7 +183,7 @@ internal sealed class Binder
         foreach (var declaration in local.Declarations)
         {
             var localVar = DeclareVariable(declaration.Name);
-            variables.Add(new BoundNameExpression(localVar));
+            variables.Add(Name(localVar));
         }
 
         var expressions = ImmutableArray.CreateBuilder<BoundExpression>();
@@ -186,7 +192,7 @@ internal sealed class Binder
             expressions.Add(BindExpression(var));
         }
 
-        return new BoundAssignmentStatement(variables.DrainToImmutable(), expressions.DrainToImmutable());
+        return Assignment(variables.DrainToImmutable(), expressions.DrainToImmutable());
     }
 
     BoundFunctionExpression BindFunctionBody(FunctionBody body)
@@ -202,14 +208,14 @@ internal sealed class Binder
 
         scope = scope.Parent!;
 
-        return new BoundFunctionExpression(bodyBlock);
+        return Function(bodyBlock);
     }
 
     BoundStatement BindLocalFunctionStatement(LocalFunctionStatementSyntax l)
     {
         var local = DeclareVariable(l.Name);
         var body = BindFunctionBody(l.Body);
-        return new BoundAssignmentStatement([new BoundNameExpression(local)], [body]);
+        return Assignment([Name(local)], [body]);
     }
 
     BoundStatement BindFunctionStatement(FunctionStatementSyntax function)
@@ -229,12 +235,12 @@ internal sealed class Binder
         var functionVariable = BindVariableExpression(name);
 
         var body = BindFunctionBody(function.Body);
-        return new BoundAssignmentStatement([functionVariable], [body]);
+        return Assignment([functionVariable], [body]);
     }
 
     BoundStatement BindDoStatement(DoStatementSyntax @do)
     {
-        return new BoundDoStatement(BindBlock(@do.Body));
+        return Do(BindBlock(@do.Body));
     }
 
     BoundStatement BindBreakStatement(BreakStatementSyntax @break)
@@ -246,7 +252,7 @@ internal sealed class Binder
         }
 
         var breakLabel = breakLabelStack.Peek();
-        return new BoundGotoStatement(breakLabel);
+        return Goto(breakLabel);
     }
 
 
@@ -255,7 +261,7 @@ internal sealed class Binder
         var condition = BindExpression(@while.Condition);
         var body = BindLoopBody(@while.Body, out var breakLabel, newScope: true);
     
-        return new BoundWhileStatement(condition, body, breakLabel);
+        return While(condition, body, breakLabel);
     }
 
 
@@ -285,7 +291,7 @@ internal sealed class Binder
             values.Add(BindExpression(val));
         }
 
-        return new BoundAssignmentStatement(variables.DrainToImmutable(), values.DrainToImmutable());
+        return Assignment(variables.DrainToImmutable(), values.DrainToImmutable());
     }
 
     BoundExpressionStatement BindExpressionStatement(ExpressionStatementSyntax e)
@@ -324,17 +330,17 @@ internal sealed class Binder
         {
             var key = assignment.Field switch
             {
-                null => new BoundLiteralExpression(implicitIndexCounter++),
+                null => Literal(implicitIndexCounter++),
                 SyntaxToken { Kind: SyntaxKind.Name, Value: string keyName } => new BoundLiteralExpression(keyName),
                 ExpressionSyntax expression => BindExpression(expression)
             };
 
             var value = BindExpression(assignment.Value);
 
-            boundAssignments.Add(new BoundFieldAssignment(key, value));
+            boundAssignments.Add(FieldAssignment(key, value));
         }
 
-        return new BoundTableConstructorExpression(boundAssignments.DrainToImmutable());
+        return TableConstructor(boundAssignments.DrainToImmutable());
     }
 
 
@@ -356,19 +362,19 @@ internal sealed class Binder
             args.Add(BindExpression(arg));
         }
 
-        return new BoundCallExpression(receiver, args.DrainToImmutable());
+        return Call(receiver, args.DrainToImmutable());
     }
 
     BoundVariableExpression BindVariableExpression(VariableExpressionSyntax variable) => variable switch
     {
         DottedExpressionSyntax d 
-            => new BoundIndexExpression(
-                    BindExpression(d.Receiver),
-                    new BoundLiteralExpression(d.Name.Value!)),
+            => Index(
+                BindExpression(d.Receiver),
+                Literal(d.Name.Value!)),
         IndexExpressionSyntax i 
-            => new BoundIndexExpression(
-                    BindExpression(i.Receiver),
-                    BindExpression(i.IndexArgument)),
+            => Index(
+                BindExpression(i.Receiver),
+                BindExpression(i.IndexArgument)),
         NameExpressionSyntax n => BindNameExpression(n),
         _ => throw new UnreachableException(),
     };
@@ -381,18 +387,18 @@ internal sealed class Binder
     BoundExpression BindLiteralExpression(LiteralExpressionSyntax syntax)
     {
         var value = syntax.Value.Value ?? 0;
-        return new BoundLiteralExpression(value);
+        return Literal(value);
     }
 
     BoundVariableExpression BindNameExpression(NameExpressionSyntax syntax)
     {
         if (LookupVariable(syntax.Name) is LocalSymbol variable)
         {
-            return new BoundNameExpression(variable);
+            return Name(variable);
         }
 
         var env = scope.Lookup("_ENV");
-        return new BoundIndexExpression(new BoundNameExpression(env), new BoundLiteralExpression(syntax.Name));
+        return Index(Name(env), Literal(syntax.Name));
     }
 
     BoundExpression BindUnaryExpression(UnaryExpressionSyntax syntax)
@@ -400,7 +406,7 @@ internal sealed class Binder
         var boundOperand = BindExpression(syntax.Operand);
         var boundOperator = BoundUnaryOperator.Bind(syntax.Operator);
 
-        return new BoundUnaryExpression(boundOperator, boundOperand);
+        return Unary(boundOperator, boundOperand);
     }
 
     private BoundExpression BindBinaryExpression(BinaryExpressionSyntax syntax)
@@ -409,7 +415,7 @@ internal sealed class Binder
         var boundRight = BindExpression(syntax.Right);
         var boundOperator = BoundBinaryOperator.Bind(syntax.Operator);
 
-        return new BoundBinaryExpression(boundLeft, boundOperator, boundRight);
+        return Binary(boundLeft, boundOperator, boundRight);
     }
 
     BoundExpression BindErrorExpression()
@@ -419,7 +425,7 @@ internal sealed class Binder
 
     BoundStatement BindErrorStatement()
     {
-        return new BoundExpressionStatement(BindErrorExpression());
+        return ExpressionStatement(BindErrorExpression());
     }
 
     LocalSymbol DeclareVariable(SyntaxToken identifier)

@@ -109,7 +109,7 @@ internal sealed class Lowerer : BoundTreeRewriter
 
         var call = Call(Name(iterator), [Name(state), controlVar]);
         statements.Add(Assignment(
-            f.Variables,
+            ImmutableArray<BoundVariableExpression>.CastUp(f.Variables),
             [call]
         ));
 

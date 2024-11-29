@@ -33,7 +33,7 @@ internal sealed record BoundAssignmentStatement(ImmutableArray<BoundVariableExpr
 internal sealed record BoundIfStatement(BoundExpression Condition, BoundBlock Consequent, ImmutableArray<BoundElseIfClause> ElseIfClauses, BoundBlock? ElseClause) : BoundStatement;
 internal sealed record BoundElseIfClause(BoundExpression Condition, BoundBlock Consequent);
 internal sealed record BoundWhileStatement(BoundExpression Condition, BoundBlock Body, LabelSymbol BreakLabel) : BoundStatement;
-internal sealed record BoundForStatement(ImmutableArray<BoundVariableExpression> Variables, ImmutableArray<BoundExpression> ExpressionList, BoundBlock Body, LabelSymbol BreakLabel) : BoundStatement;
+internal sealed record BoundForStatement(ImmutableArray<BoundNameExpression> Variables, ImmutableArray<BoundExpression> ExpressionList, BoundBlock Body, LabelSymbol BreakLabel) : BoundStatement;
 internal sealed record BoundNumericalForStatement(BoundExpression InitialValue, BoundExpression Limit, BoundExpression Step, LocalSymbol IndexVariable, BoundBlock Body, LabelSymbol BreakLabel) : BoundStatement;
 internal sealed record BoundGotoStatement(LabelSymbol Label) : BoundStatement;
 internal sealed record BoundConditionalGotoStatement(LabelSymbol Label, BoundExpression Condition, bool JumpIfTrue = true) : BoundStatement;

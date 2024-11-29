@@ -2,7 +2,6 @@
 using System.Collections.Immutable;
 
 using BrickLua.CodeAnalysis.Symbols;
-using BrickLua.CodeAnalysis.Syntax;
 
 internal static class BoundNodeFactory
 {
@@ -54,8 +53,8 @@ internal static class BoundNodeFactory
     public static BoundWhileStatement While(BoundExpression Condition, BoundBlock Body, LabelSymbol BreakLabel)
         => new(Condition, Body, BreakLabel);
 
-    public static BoundForStatement For(LocalSymbol ControlVariable, ImmutableArray<BoundExpression> ExpressionList, BoundBlock Body, LabelSymbol BreakLabel)
-        => new(ControlVariable, ExpressionList, Body, BreakLabel);
+    public static BoundForStatement For(ImmutableArray<BoundNameExpression> Variables, ImmutableArray<BoundExpression> ExpressionList, BoundBlock Body, LabelSymbol BreakLabel)
+        => new(Variables, ExpressionList, Body, BreakLabel);
 
     public static BoundNumericalForStatement NumericalFor(BoundExpression InitialValue, BoundExpression Limit, BoundExpression Step, LocalSymbol IndexVariable, BoundBlock Body, LabelSymbol BreakLabel)
         => new(InitialValue, Limit, Step, IndexVariable, Body, BreakLabel);
