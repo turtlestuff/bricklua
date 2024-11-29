@@ -1,6 +1,5 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Reflection.Metadata.Ecma335;
 
 using BrickLua.CodeAnalysis.Symbols;
 using BrickLua.CodeAnalysis.Syntax;

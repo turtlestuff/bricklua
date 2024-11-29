@@ -27,19 +27,20 @@ internal abstract class BoundTreeRewriter
             BoundForStatement f => RewriteForStatement(f),
             BoundNumericalForStatement f => RewriteNumericalForStatement(f),
             BoundGotoStatement g => RewriteGotoStatement(g),
+            BoundConditionalGotoStatement g => RewriteConditionalGotoStatement(g),
             BoundLabelStatement l => RewriteLabelStatement(l),
             BoundDoStatement d => RewriteDoStatement(d),
             BoundRepeatStatement r => RewriteRepeatStatement(r),
             _ => throw new UnreachableException()
         };
 
-    protected virtual BoundExpressionStatement RewriteExpressionStatement(BoundExpressionStatement e)
+    protected virtual BoundStatement RewriteExpressionStatement(BoundExpressionStatement e)
     {
         var expr = RewriteExpression(e.Expression);
         return new BoundExpressionStatement(expr);
     }
 
-    protected virtual BoundAssignmentStatement RewriteAssignmentStatement(BoundAssignmentStatement a)
+    protected virtual BoundStatement RewriteAssignmentStatement(BoundAssignmentStatement a)
     {
         var rewrittenExprs = ImmutableArray.CreateBuilder<BoundExpression>();
         
@@ -51,7 +52,7 @@ internal abstract class BoundTreeRewriter
         return new BoundAssignmentStatement(a.Variables, rewrittenExprs.DrainToImmutable());
     }
 
-    protected virtual BoundIfStatement RewriteIfStatement(BoundIfStatement i)
+    protected virtual BoundStatement RewriteIfStatement(BoundIfStatement i)
     {
         var condition = RewriteExpression(i.Condition);
         var consequent = RewriteBlock(i.Consequent);
@@ -74,7 +75,7 @@ internal abstract class BoundTreeRewriter
         return new BoundElseIfClause(condition, consequent);
     }
 
-    protected virtual BoundWhileStatement RewriteWhileStatement(BoundWhileStatement w)
+    protected virtual BoundStatement RewriteWhileStatement(BoundWhileStatement w)
     {
         var condition = RewriteExpression(w.Condition);
         var body = RewriteBlock(w.Body);
@@ -82,7 +83,7 @@ internal abstract class BoundTreeRewriter
         return new BoundWhileStatement(condition, body, w.BreakLabel);
     }
 
-    protected virtual BoundForStatement RewriteForStatement(BoundForStatement f)
+    protected virtual BoundStatement RewriteForStatement(BoundForStatement f)
     {
         var body = RewriteBlock(f.Body);
 
@@ -95,7 +96,7 @@ internal abstract class BoundTreeRewriter
         return new BoundForStatement(f.ControlVariable, expressions.MoveToImmutable(), body, f.BreakLabel);
     }
 
-    protected virtual BoundNumericalForStatement RewriteNumericalForStatement(BoundNumericalForStatement f)
+    protected virtual BoundStatement RewriteNumericalForStatement(BoundNumericalForStatement f)
     {
         var initialValue = RewriteExpression(f.InitialValue);
         var limit = RewriteExpression(f.Limit);
@@ -105,7 +106,11 @@ internal abstract class BoundTreeRewriter
         return new BoundNumericalForStatement(initialValue, limit, step, f.IndexVariable, body, f.BreakLabel);
     }
 
-    protected virtual BoundGotoStatement RewriteGotoStatement(BoundGotoStatement g)
+    protected virtual BoundStatement RewriteGotoStatement(BoundGotoStatement g)
+    {
+        return g;
+    }
+    protected virtual BoundStatement RewriteConditionalGotoStatement(BoundConditionalGotoStatement g)
     {
         return g;
     }
@@ -115,13 +120,13 @@ internal abstract class BoundTreeRewriter
         return l;
     }
 
-    protected virtual BoundDoStatement RewriteDoStatement(BoundDoStatement d)
+    protected virtual BoundStatement RewriteDoStatement(BoundDoStatement d)
     {
         var body = RewriteBlock(d.Body);
         return new BoundDoStatement(body);
     }
 
-    protected virtual BoundRepeatStatement RewriteRepeatStatement(BoundRepeatStatement r)
+    protected virtual BoundStatement RewriteRepeatStatement(BoundRepeatStatement r)
     {
         var condition = RewriteExpression(r.Condition);
         var body = RewriteBlock(r.Body);
