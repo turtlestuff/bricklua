@@ -9,7 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\BrickLua\BrickLua.CodeAnalysis.csproj" />
+        <ProjectReference Include="..\BrickLua.CodeAnalysis\BrickLua.CodeAnalysis.csproj" />
     </ItemGroup>
 
 </Project>

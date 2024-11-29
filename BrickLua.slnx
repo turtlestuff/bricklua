@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+  </Folder>
+  <Project Path="bli/bli.csproj" />
+  <Project Path="BrickLua.CodeAnalysis/BrickLua.CodeAnalysis.csproj" />
+  <Project Path="BrickLua.CodeAnalysis.Tests/BrickLua.CodeAnalysis.Tests.csproj" />
+</Solution>

@@ -93,7 +93,7 @@ internal abstract class BoundTreeRewriter
             expressions.Add(RewriteExpression(expr));
         }
 
-        return new BoundForStatement(f.ControlVariable, expressions.MoveToImmutable(), body, f.BreakLabel);
+        return new BoundForStatement(f.Variables, expressions.MoveToImmutable(), body, f.BreakLabel);
     }
 
     protected virtual BoundStatement RewriteNumericalForStatement(BoundNumericalForStatement f)
